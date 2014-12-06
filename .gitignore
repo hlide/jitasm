@@ -20,13 +20,12 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe
 *.out
 *.app
-x64/Release/
+x64/Release
 test/x64/Release
 *.suo
 *.sdf
