@@ -6,61 +6,61 @@
 #include "jitasm.Frontend.x86.h"
 namespace jitasm
 {
-	namespace x86_64
-	{
-		namespace detail
-		{
-			using namespace jitasm::detail;
+    namespace x86_64
+    {
+        namespace detail
+        {
+            using namespace jitasm::detail;
 
-			/**
-			* <b>Stack layout</b>
-			* \verbatim
-			* +-----------------------+
-			* | Caller return address |
-			* +=======================+========
-			* |       ebp (rbp)       |
-			* +-----------------------+ <-- ebp (rbp)
-			* |  Saved gp registers   |
-			* +-----------------------+
-			* | Padding for alignment |
-			* +-----------------------+ <-- Stack base
-			* |    Spill slots and    |
-			* |    local variable     |
-			* +-----------------------+ <-- esp (rsp)
-			* \endverbatim
-			*/
-			class StackManager
-			{
-			private:
-				Addr stack_base_;
-				uint32 stack_size_;
+            /**
+            * <b>Stack layout</b>
+            * \verbatim
+            * +-----------------------+
+            * | Caller return address |
+            * +=======================+========
+            * |       ebp (rbp)       |
+            * +-----------------------+ <-- ebp (rbp)
+            * |  Saved gp registers   |
+            * +-----------------------+
+            * | Padding for alignment |
+            * +-----------------------+ <-- Stack base
+            * |    Spill slots and    |
+            * |    local variable     |
+            * +-----------------------+ <-- esp (rsp)
+            * \endverbatim
+            */
+            class StackManager
+            {
+            private:
+                Addr stack_base_;
+                uint32 stack_size_;
 
-			public:
-				StackManager() : stack_base_(RegID::CreatePhysicalRegID(R_TYPE_GP, EBX), 0), stack_size_(0) {}
+            public:
+                StackManager() : stack_base_(RegID::CreatePhysicalRegID(R_TYPE_GP, EBX), 0), stack_size_(0) {}
 
-				/// Get allocated stack size
-				uint32 GetSize() const { return (stack_size_ + 15) / 16 * 16; /* 16 bytes aligned*/ }
+                /// Get allocated stack size
+                uint32 GetSize() const { return (stack_size_ + 15) / 16 * 16; /* 16 bytes aligned*/ }
 
-				/// Get stack base
-				Addr GetStackBase() const { return stack_base_; }
+                /// Get stack base
+                Addr GetStackBase() const { return stack_base_; }
 
-				/// Set stack base
-				void SetStackBase(const Addr& stack_base) { stack_base_ = stack_base; }
+                /// Set stack base
+                void SetStackBase(const Addr& stack_base) { stack_base_ = stack_base; }
 
-				/// Allocate stack
-				Addr Alloc(uint32 size, uint32 alignment)
-				{
-					stack_size_ = (stack_size_ + alignment - 1) / alignment * alignment;
-					stack_size_ += size;
-					return stack_base_ - stack_size_;
-				}
-			};
-		}
+                /// Allocate stack
+                Addr Alloc(uint32 size, uint32 alignment)
+                {
+                    stack_size_ = (stack_size_ + alignment - 1) / alignment * alignment;
+                    stack_size_ += size;
+                    return stack_base_ - stack_size_;
+                }
+            };
+        }
 
         template < typename Derived > struct Frontend$CRTP : jitasm::x86::Frontend$CRTP< Derived > /* using Curiously Recurring Template Pattern */
-		{
-			typedef jitasm::x86::Addr64	Addr;
-			typedef jitasm::x86::Reg64	Reg;
+        {
+            typedef jitasm::x86::Addr64	Addr;
+            typedef jitasm::x86::Reg64	Reg;
 
             Reg8					    r8b, r9b, r10b, r11b, r12b, r13b, r14b, r15b;
             Reg16				        r8w, r9w, r10w, r11w, r12w, r13w, r14w, r15w;
@@ -70,49 +70,49 @@ namespace jitasm
             YmmReg				        ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15;
             Reg					        zax, zcx, zdx, zbx, zsp, zbp, zsi, zdi;
 
-			AddressingPtr<Opd8>			byte_ptr;
-			AddressingPtr<Opd16>		word_ptr;
-			AddressingPtr<Opd32>		dword_ptr;
-			AddressingPtr<Opd64>		qword_ptr;
-			AddressingPtr<Opd64>		mmword_ptr;
-			AddressingPtr<Opd128>		xmmword_ptr;
-			AddressingPtr<Opd256>		ymmword_ptr;
-			AddressingPtr<Opd32>		real4_ptr;
-			AddressingPtr<Opd64>		real8_ptr;
-			AddressingPtr<Opd80>		real10_ptr;
-			AddressingPtr<Opd16>		m2byte_ptr;
-			AddressingPtr<Opd224>		m28byte_ptr;
-			AddressingPtr<Opd864>		m108byte_ptr;
-			AddressingPtr<Opd4096>		m512byte_ptr;
+            AddressingPtr<Opd8>			byte_ptr;
+            AddressingPtr<Opd16>		word_ptr;
+            AddressingPtr<Opd32>		dword_ptr;
+            AddressingPtr<Opd64>		qword_ptr;
+            AddressingPtr<Opd64>		mmword_ptr;
+            AddressingPtr<Opd128>		xmmword_ptr;
+            AddressingPtr<Opd256>		ymmword_ptr;
+            AddressingPtr<Opd32>		real4_ptr;
+            AddressingPtr<Opd64>		real8_ptr;
+            AddressingPtr<Opd80>		real10_ptr;
+            AddressingPtr<Opd16>		m2byte_ptr;
+            AddressingPtr<Opd224>		m28byte_ptr;
+            AddressingPtr<Opd864>		m108byte_ptr;
+            AddressingPtr<Opd4096>		m512byte_ptr;
 
-			AddressingPtr<Opd64>		ptr;
+            AddressingPtr<Opd64>		ptr;
 
-			detail::StackManager	    stack_manager_;
+            detail::StackManager	    stack_manager_;
 
-			template < typename OpdN > struct RipPtr : AddressingPtr < OpdN >
-			{
-				Mem$< OpdN > operator[](uint32_t label_name)
-				{
-					Mem$< OpdN > result(O_SIZE_64, O_SIZE_64, RegID::CreatePhysicalRegID(R_TYPE_IP, RIP), RegID::Invalid(), 0, 0);
-					switch (result.GetSize())
-					{
-					case O_SIZE_8:    return result[((Frontend*)((char*)this - offsetof(Frontend, byte_rip_ptr)))->GetLabelID(label_name)];
-					case O_SIZE_16:   return result[((Frontend*)((char*)this - offsetof(Frontend, word_rip_ptr)))->GetLabelID(label_name)];
-					case O_SIZE_32:   return result[((Frontend*)((char*)this - offsetof(Frontend, dword_rip_ptr)))->GetLabelID(label_name)];
-					case O_SIZE_64:   return result[((Frontend*)((char*)this - offsetof(Frontend, qword_rip_ptr)))->GetLabelID(label_name)];
-					case O_SIZE_128:  return result[((Frontend*)((char*)this - offsetof(Frontend, xmmword_rip_ptr)))->GetLabelID(label_name)];
-					case O_SIZE_256:  return result[((Frontend*)((char*)this - offsetof(Frontend, ymmword_rip_ptr)))->GetLabelID(label_name)];
-					}
-					return result;
-				}
-			};
+            template < typename OpdN > struct RipPtr : AddressingPtr < OpdN >
+            {
+                Mem$< OpdN > operator[](uint32_t label_name)
+                {
+                    Mem$< OpdN > result(O_SIZE_64, O_SIZE_64, RegID::CreatePhysicalRegID(R_TYPE_IP, RIP), RegID::Invalid(), 0, 0);
+                    switch (result.GetSize())
+                    {
+                    case O_SIZE_8:    return result[((Frontend*)((char*)this - offsetof(Frontend, byte_rip_ptr)))->GetLabelID(label_name)];
+                    case O_SIZE_16:   return result[((Frontend*)((char*)this - offsetof(Frontend, word_rip_ptr)))->GetLabelID(label_name)];
+                    case O_SIZE_32:   return result[((Frontend*)((char*)this - offsetof(Frontend, dword_rip_ptr)))->GetLabelID(label_name)];
+                    case O_SIZE_64:   return result[((Frontend*)((char*)this - offsetof(Frontend, qword_rip_ptr)))->GetLabelID(label_name)];
+                    case O_SIZE_128:  return result[((Frontend*)((char*)this - offsetof(Frontend, xmmword_rip_ptr)))->GetLabelID(label_name)];
+                    case O_SIZE_256:  return result[((Frontend*)((char*)this - offsetof(Frontend, ymmword_rip_ptr)))->GetLabelID(label_name)];
+                    }
+                    return result;
+                }
+            };
 
-			RipPtr<   Opd8 >	    byte_rip_ptr;
-			RipPtr<  Opd16 >	    word_rip_ptr;
-			RipPtr<  Opd32 >	    dword_rip_ptr;
-			RipPtr<  Opd64 >	    qword_rip_ptr, rip_ptr;
-			RipPtr< Opd128 >	    xmmword_rip_ptr;
-			RipPtr< Opd256 >	    ymmword_rip_ptr;
+            RipPtr<   Opd8 >	    byte_rip_ptr;
+            RipPtr<  Opd16 >	    word_rip_ptr;
+            RipPtr<  Opd32 >	    dword_rip_ptr;
+            RipPtr<  Opd64 >	    qword_rip_ptr, rip_ptr;
+            RipPtr< Opd128 >	    xmmword_rip_ptr;
+            RipPtr< Opd256 >	    ymmword_rip_ptr;
 
             Frontend$CRTP()
                 : jitasm::x86::Frontend$CRTP< Derived >(true),
@@ -183,10 +183,10 @@ namespace jitasm
                 zdi(RDI)
             {
             }
-			virtual ~Frontend$CRTP()
+            virtual ~Frontend$CRTP()
             {
             }
-		};
-	}
+        };
+    }
 }
 #endif // jitasm_Frontend_xx86_64_h__

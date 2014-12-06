@@ -109,137 +109,137 @@
 
 namespace jitasm
 {
-	typedef int8_t				sint8;
-	typedef int16_t				sint16;
-	typedef int32_t				sint32;
-	typedef int64_t				sint64;
-	typedef uint8_t				uint8;
-	typedef uint16_t			uint16;
-	typedef uint32_t			uint32;
-	typedef uint64_t			uint64;
+    typedef int8_t				sint8;
+    typedef int16_t				sint16;
+    typedef int32_t				sint32;
+    typedef int64_t				sint64;
+    typedef uint8_t				uint8;
+    typedef uint16_t			uint16;
+    typedef uint32_t			uint32;
+    typedef uint64_t			uint64;
 
-	template< typename T > inline void avoid_unused_warn(T const &) {}
+    template< typename T > inline void avoid_unused_warn(T const &) {}
 
-	namespace detail
-	{
-		inline void * aligned_malloc(size_t size, size_t alignment)
-		{
+    namespace detail
+    {
+        inline void * aligned_malloc(size_t size, size_t alignment)
+        {
 #ifdef __MINGW32__
-			return __mingw_aligned_malloc(size, alignment);
+            return __mingw_aligned_malloc(size, alignment);
 #elif defined(_MSC_VER)
-			return _aligned_malloc(size, alignment);
+            return _aligned_malloc(size, alignment);
 #else
-			void * p;
-			int ret = posix_memalign(&p, alignment, size);
-			return (ret == 0) ? p : 0;
+            void * p;
+            int ret = posix_memalign(&p, alignment, size);
+            return (ret == 0) ? p : 0;
 #endif
-		}
+        }
 
-		inline void aligned_free(void * p)
-		{
+        inline void aligned_free(void * p)
+        {
 #ifdef __MINGW32__
-			__mingw_aligned_free(p);
+            __mingw_aligned_free(p);
 #elif defined(_MSC_VER)
-			_aligned_free(p);
+            _aligned_free(p);
 #else
-			free(p);
+            free(p);
 #endif
-		}
+        }
 
-		/// Counting 1-Bits
-		inline uint32 count_1_bits(uint32 x)
-		{
-			x = x - ((x >> 1) & 0x55555555);
-			x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-			x = (x + (x >> 4)) & 0x0F0F0F0F;
-			x = x + (x >> 8);
-			x = x + (x >> 16);
-			return x & 0x0000003F;
-		}
+        /// Counting 1-Bits
+        inline uint32 count_1_bits(uint32 x)
+        {
+            x = x - ((x >> 1) & 0x55555555);
+            x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+            x = (x + (x >> 4)) & 0x0F0F0F0F;
+            x = x + (x >> 8);
+            x = x + (x >> 16);
+            return x & 0x0000003F;
+        }
 
-		/// The bit position of the first bit 1.
-		inline uint32 bit_scan_forward(uint32 x)
-		{
+        /// The bit position of the first bit 1.
+        inline uint32 bit_scan_forward(uint32 x)
+        {
 #if defined(JITASM_GCC)
-			return __builtin_ctz(x);
+            return __builtin_ctz(x);
 #else
-			unsigned long index;
-			_BitScanForward(&index, x);
-			return index;
+            unsigned long index;
+            _BitScanForward(&index, x);
+            return index;
 #endif
-		}
+        }
 
-		/// The bit position of the last bit 1.
-		inline uint32 bit_scan_reverse(uint32 x)
-		{
+        /// The bit position of the last bit 1.
+        inline uint32 bit_scan_reverse(uint32 x)
+        {
 #if defined(JITASM_GCC)
-			return 31 - __builtin_clz(x);
+            return 31 - __builtin_clz(x);
 #else
-			unsigned long index;
-			_BitScanReverse(&index, x);
-			return index;
+            unsigned long index;
+            _BitScanReverse(&index, x);
+            return index;
 #endif
-		}
+        }
 
-		/// Prior iterator
-		template< class It > It prior(It const & it)
-		{
-			It i = it;
-			return --i;
-		}
+        /// Prior iterator
+        template< class It > It prior(It const & it)
+        {
+            It i = it;
+            return --i;
+        }
 
-		/// Next iterator
-		template< class It > It next(It const & it)
-		{
-			It i = it;
-			return ++i;
-		}
+        /// Next iterator
+        template< class It > It next(It const & it)
+        {
+            It i = it;
+            return ++i;
+        }
 
-		/// Iterator range
-		template< class T, class It = typename T::iterator > struct Range : std::pair < It, It >
-		{
-			typedef It Iterator;
-			Range() : std::pair< It, It >() {}
-			Range(It const & f, It const & s) : std::pair< It, It >(f, s) {}
-			Range(T & container) : std::pair< It, It >(container.begin(), container.end()) {}
-			bool empty() const { return this->first == this->second; }
-			size_t size() const { return std::distance(this->first, this->second); }
-		};
+        /// Iterator range
+        template< class T, class It = typename T::iterator > struct Range : std::pair < It, It >
+        {
+            typedef It Iterator;
+            Range() : std::pair< It, It >() {}
+            Range(It const & f, It const & s) : std::pair< It, It >(f, s) {}
+            Range(T & container) : std::pair< It, It >(container.begin(), container.end()) {}
+            bool empty() const { return this->first == this->second; }
+            size_t size() const { return std::distance(this->first, this->second); }
+        };
 
-		/// Const iterator range
-		template< class T > struct ConstRange : Range < T, typename T::const_iterator >
-		{
-			ConstRange() : Range< T, typename T::const_iterator >() {}
-			ConstRange(typename T::const_iterator const & f, typename T::const_iterator const & s) : Range< T, typename T::const_iterator >(f, s) {}
-			ConstRange(T const & container) : Range< T, typename T::const_iterator >(container.begin(), container.end()) {}
-		};
+        /// Const iterator range
+        template< class T > struct ConstRange : Range < T, typename T::const_iterator >
+        {
+            ConstRange() : Range< T, typename T::const_iterator >() {}
+            ConstRange(typename T::const_iterator const & f, typename T::const_iterator const & s) : Range< T, typename T::const_iterator >(f, s) {}
+            ConstRange(T const & container) : Range< T, typename T::const_iterator >(container.begin(), container.end()) {}
+        };
 
-		inline void append_num(std::string & str, size_t num)
-		{
-			if (num >= 10)
-			{
-				append_num(str, num / 10);
-			}
-			str.append(1, static_cast<char>('0' + num % 10));
-		}
+        inline void append_num(std::string & str, size_t num)
+        {
+            if (num >= 10)
+            {
+                append_num(str, num / 10);
+            }
+            str.append(1, static_cast<char>('0' + num % 10));
+        }
 
 #if defined(JITASM_DEBUG_DUMP) && defined(JITASM_WIN)
-		/// Debug trace
-		inline void Trace(const char *format, ...)
-		{
-			char szBuf[256];
-			va_list args;
-			va_start(args, format);
+        /// Debug trace
+        inline void Trace(const char *format, ...)
+        {
+            char szBuf[256];
+            va_list args;
+            va_start(args, format);
 #if _MSC_VER >= 1400	// VC8 or later
-			_vsnprintf_s(szBuf, sizeof(szBuf) / sizeof(char), format, args);
+            _vsnprintf_s(szBuf, sizeof(szBuf) / sizeof(char), format, args);
 #else
-			vsnprintf(szBuf, sizeof(szBuf) / sizeof(char), format, args);
+            vsnprintf(szBuf, sizeof(szBuf) / sizeof(char), format, args);
 #endif
-			va_end(args);
-			::OutputDebugStringA(szBuf);
-		}
+            va_end(args);
+            ::OutputDebugStringA(szBuf);
+        }
 #endif
-	}
+    }
 }
 
 #if defined(_MSC_VER)

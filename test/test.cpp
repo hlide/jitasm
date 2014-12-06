@@ -9,43 +9,43 @@
 
 static void capstone_Disassemble(FILE * out, cs_insn & insn)
 {
-	char address[32];
+    char address[32];
 
-	//sprintf(address, "0x%08llX(%2d):", insn.address, insn.size);
+    //sprintf(address, "0x%08llX(%2d):", insn.address, insn.size);
 
-	sprintf(address, "(%2d):", insn.size);
+    sprintf(address, "(%2d):", insn.size);
 
-	char bytes[64], *p = bytes;
+    char bytes[64], *p = bytes;
 
-	for (size_t i = 0; i < insn.size; ++i)
-	{
-		p += sprintf(p, "%02X", size_t(insn.bytes[insn.size - i - 1]));
-	}
+    for (size_t i = 0; i < insn.size; ++i)
+    {
+        p += sprintf(p, "%02X", size_t(insn.bytes[insn.size - i - 1]));
+    }
 
-	//fprintf(out, "%s %32s %-16s %s\r\n", address, bytes, insn.mnemonic, insn.op_str);
-	fprintf(out, "%s %16s %-8s %s\r\n", address, bytes, insn.mnemonic, insn.op_str);
+    //fprintf(out, "%s %32s %-16s %s\r\n", address, bytes, insn.mnemonic, insn.op_str);
+    fprintf(out, "%s %16s %-8s %s\r\n", address, bytes, insn.mnemonic, insn.op_str);
 }
 
 static void capstone_Dump(FILE * out, cs_mode mode, void * code, size_t size)
 {
-	cs_insn * insn;
-	csh handle;
-	cs_err err = ::cs_open(CS_ARCH_X86, mode, &handle);
+    cs_insn * insn;
+    csh handle;
+    cs_err err = ::cs_open(CS_ARCH_X86, mode, &handle);
 
-	if (CS_ERR_OK == err)
-	{
-		size_t count = ::cs_disasm(handle, (uint8_t const *)code, size, (uint64_t)code, 0, &insn);
-		if (count > 0)
-		{
-			for (size_t j = 0; j < count; ++j)
-			{
-				capstone_Disassemble(out, insn[j]);
-			}
-			::cs_free(insn, count);
-		}
+    if (CS_ERR_OK == err)
+    {
+        size_t count = ::cs_disasm(handle, (uint8_t const *)code, size, (uint64_t)code, 0, &insn);
+        if (count > 0)
+        {
+            for (size_t j = 0; j < count; ++j)
+            {
+                capstone_Disassemble(out, insn[j]);
+            }
+            ::cs_free(insn, count);
+        }
 
-		::cs_close(&handle);
-	}
+        ::cs_close(&handle);
+    }
 }
 
 class CriticalSection : CRITICAL_SECTION
@@ -75,37 +75,37 @@ public:
 /** @brief   The RTL create heap. */
 static auto RtlCreateHeap =
 (PVOID (NTAPI *)(
-	_In_      ULONG Flags,
-	_In_opt_  PVOID HeapBase,
-	_In_opt_  SIZE_T ReserveSize,
-	_In_opt_  SIZE_T CommitSize,
-	_In_opt_  PVOID Lock,
-	_In_opt_  PVOID Parameters
-	))::GetProcAddress(::GetModuleHandleA("ntdll.dll"), "RtlCreateHeap");
+    _In_      ULONG Flags,
+    _In_opt_  PVOID HeapBase,
+    _In_opt_  SIZE_T ReserveSize,
+    _In_opt_  SIZE_T CommitSize,
+    _In_opt_  PVOID Lock,
+    _In_opt_  PVOID Parameters
+    ))::GetProcAddress(::GetModuleHandleA("ntdll.dll"), "RtlCreateHeap");
 
 static auto RtlAllocateHeap =
 (PVOID (NTAPI *)(
-	_In_      PVOID HeapHandle,
-	_In_opt_  ULONG Flags,
-	_In_      SIZE_T Size
+    _In_      PVOID HeapHandle,
+    _In_opt_  ULONG Flags,
+    _In_      SIZE_T Size
     ))::GetProcAddress(::GetModuleHandleA("ntdll.dll"), "RtlAllocateHeap");
 
 static auto RtlFreeHeap =
 (BOOLEAN (NTAPI *)(
-	_In_      PVOID HeapHandle,
-	_In_opt_  ULONG Flags,
-	_In_      PVOID HeapBase
+    _In_      PVOID HeapHandle,
+    _In_opt_  ULONG Flags,
+    _In_      PVOID HeapBase
     ))::GetProcAddress(::GetModuleHandleA("ntdll.dll"), "RtlFreeHeap");
 
 static auto RtlDestroyHeap =
 (PVOID (NTAPI *)(
-	_In_  PVOID HeapHandle
+    _In_  PVOID HeapHandle
     ))::GetProcAddress(::GetModuleHandleA("ntdll.dll"), "RtlDestroyHeap");
 
 struct CodeBuffer : jitasm::CodeBuffer$CRTP< CodeBuffer >
 {
-	bool AllocateBuffer(size_t codesize)
-	{
+    bool AllocateBuffer(size_t codesize)
+    {
         void * p = ::RtlAllocateHeap(heap_, 0, codesize);
         if (p)
         {
@@ -113,12 +113,12 @@ struct CodeBuffer : jitasm::CodeBuffer$CRTP< CodeBuffer >
             buffsize_ = codesize;
         }
         return !!p;
-	}
+    }
 
-	bool FreeBuffer()
-	{
+    bool FreeBuffer()
+    {
         return TRUE == ::RtlFreeHeap(heap_, 0, buffaddr_);
-	}
+    }
 
     CodeBuffer()
     {
@@ -179,7 +179,7 @@ struct CodeBuffer : jitasm::CodeBuffer$CRTP< CodeBuffer >
         }
     }
 
-	static HANDLE           heap_;
+    static HANDLE           heap_;
     static HANDLE           filemapping_;
     static void           * base_;
     static CriticalSection  cs_;
@@ -199,35 +199,35 @@ struct Frontend_x86_32 : jitasm::x86_32::Frontend$CRTP< Frontend_x86_32 >, CodeB
     typedef ::CodeBuffer CodeBuffer;
 
     void InternalMain()
-	{
-		using namespace jitasm::x86_32;
+    {
+        using namespace jitasm::x86_32;
 
-		Imm8  i8(0x55);
-		Imm16 i16(0x5555);
-		Imm32 i32(0x55555555);
+        Imm8  i8(0x55);
+        Imm16 i16(0x5555);
+        Imm32 i32(0x55555555);
 
-		AppendInstr(I_ADD, al, i8);
-		AppendInstr(I_ADD, ax, i16);
-		AppendInstr(I_ADD, eax, i32);
-		
+        AppendInstr(I_ADD, al, i8);
+        AppendInstr(I_ADD, ax, i16);
+        AppendInstr(I_ADD, eax, i32);
+        
         AppendInstr(I_ALIGN, Imm8(5));
 
-		AppendInstr(I_ADD, ax, i8);
-		AppendInstr(I_ADD, eax, i8);
-		
-		AppendInstr(I_ADD, dl, i8);
-		AppendInstr(I_ADD, dx, i16);
-		AppendInstr(I_ADD, edx, i32);
+        AppendInstr(I_ADD, ax, i8);
+        AppendInstr(I_ADD, eax, i8);
+        
+        AppendInstr(I_ADD, dl, i8);
+        AppendInstr(I_ADD, dx, i16);
+        AppendInstr(I_ADD, edx, i32);
 
-		AppendInstr(I_ADD, dx, i8);
-		AppendInstr(I_ADD, edx, i8);
-		
-		AppendInstr(I_ADD, al, dl);
-		AppendInstr(I_ADD, ax, dx);
-		AppendInstr(I_ADD, eax, edx);
+        AppendInstr(I_ADD, dx, i8);
+        AppendInstr(I_ADD, edx, i8);
+        
+        AppendInstr(I_ADD, al, dl);
+        AppendInstr(I_ADD, ax, dx);
+        AppendInstr(I_ADD, eax, edx);
 
-		AppendInstr(I_ADD, eax, ptr[edx + ebx * 2 + 16]);
-		AppendInstr(I_ADD, ptr[edx + ebx * 2 + 16], eax);
+        AppendInstr(I_ADD, eax, ptr[edx + ebx * 2 + 16]);
+        AppendInstr(I_ADD, ptr[edx + ebx * 2 + 16], eax);
 
         AppendInstr(I_MOV, al, ptr[0x55555555]);
         AppendInstr(I_MOV, ax, ptr[0x55555555]);
@@ -243,8 +243,8 @@ struct Frontend_x86_64 : jitasm::x86_64::Frontend$CRTP< Frontend_x86_64 >, CodeB
     typedef ::CodeBuffer CodeBuffer;
 
     void InternalMain()
-	{
-		using namespace jitasm::x86_64;
+    {
+        using namespace jitasm::x86_64;
 
         Imm8  i8(0x55);
         Imm16 i16(0x5555);
@@ -287,38 +287,38 @@ struct Frontend_x86_64 : jitasm::x86_64::Frontend$CRTP< Frontend_x86_64 >, CodeB
         AppendInstr(I_MOV, ptr[0x5555555555555555], eax);
         AppendInstr(I_MOV, ptr[0x5555555555555555], rax);
         //AppendInstr(I_ADD, eax, rip_ptr[16]);
-	}
+    }
 };
 
 void test_x86()
 {
-	Frontend_x86_32 x86;
+    Frontend_x86_32 x86;
 
     void * code = x86.GetCodePointer();
     size_t size = x86.GetCodeSize();
 
-	fprintf(stdout, "test_x86:\r\n=========\r\n");
-	capstone_Dump(stdout, CS_MODE_32, code, size);
-	fprintf(stdout, "\r\n");
+    fprintf(stdout, "test_x86:\r\n=========\r\n");
+    capstone_Dump(stdout, CS_MODE_32, code, size);
+    fprintf(stdout, "\r\n");
 }
 
 void test_x64()
 {
-	Frontend_x86_64 x64;
+    Frontend_x86_64 x64;
 
     void * code = x64.GetCodePointer();
     size_t size = x64.GetCodeSize();
 
     fprintf(stdout, "test_x64:\r\n=========\r\n");
-	capstone_Dump(stdout, CS_MODE_64, code, size);
-	fprintf(stdout, "\r\n");
+    capstone_Dump(stdout, CS_MODE_64, code, size);
+    fprintf(stdout, "\r\n");
 }
 
 int main(int argc, char * argv[])
 {
-	test_x86();
+    test_x86();
 
-	test_x64();
+    test_x64();
 
-	return 0;
+    return 0;
 }
