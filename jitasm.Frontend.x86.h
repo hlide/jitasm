@@ -93,7 +93,9 @@ namespace jitasm
             {
             }
 
-            virtual ~Frontend$CRTP() {}
+            virtual ~Frontend$CRTP()
+            {
+            }
 
             void DeclareRegArg(detail::Opd const & var, detail::Opd const & arg, detail::Opd const & spill_slot = detail::Opd())
             {
@@ -152,7 +154,7 @@ namespace jitasm
 
             size_t GetJumpTo(Instr const & instr) const
             {
-                size_t label_id = (size_t)instr.GetOpd(0).GetImm();
+                auto label_id = size_t(instr.GetOpd(0).GetImm());
                 return label_id != size_t(-1) ? labels_[label_id].instr : 0;
             }
 
@@ -163,13 +165,13 @@ namespace jitasm
                 {
                     if (IsJump(instr.GetID()))
                     {
-                        size_t target = GetJumpTo(instr);
+                        auto target = GetJumpTo(instr);
                         instr.GetOpd(1) = Imm64(target);	// instruction number
                         instr.GetOpd(0) = Imm8(0x7F);       // short jump instruction
                     }
                     else if (HasRIP(instr.GetOpd(1)))
                     {
-                        size_t label_id = (size_t)instr.GetOpd(1).GetDisp();
+                        auto label_id = size_t(instr.GetOpd(1).GetDisp());
                         instr.GetOpd(1).disp_ = sint64(labels_[label_id].instr);	// instruction number
                     }
                 }
@@ -177,12 +179,15 @@ namespace jitasm
                 // choose short jump instruction when possible
                 std::vector< int > offsets;
                 offsets.reserve(instrs_.size() + 1);
+
                 bool retry;
                 do
                 {
                     offsets.clear();
                     offsets.push_back(0);
+
                     Backend pre(is64_);
+
                     for (auto & instr : instrs_)
                     {
                         pre.Assemble(instr);
@@ -191,22 +196,26 @@ namespace jitasm
 
                     retry = false;
                     size_t i = 0;
+
                     for (auto & instr : instrs_)
                     {
                         if (IsJump(instr.GetID()))
                         {
-                            size_t d = (size_t)instr.GetOpd(1).GetImm();
-                            int rel = (int)offsets[d] - offsets[i + 1];
-                            if ((instr.GetID() == I_JMP || instr.GetID() == I_JCC) && !rel) // eat JMP +0
+                            auto d = size_t(instr.GetOpd(1).GetImm());
+                            auto r = int(offsets[d] - offsets[i + 1]);
+                            
+                            if ((instr.GetID() == I_JMP || instr.GetID() == I_JCC) && !r) // eat JMP +0
                             {
                                 instr = Instr(I_NULL, 0, 0);
                                 retry = true;
                                 break;
                             }
-                            OpdSize size = instr.GetOpd(0).GetSize();
-                            if (size == O_SIZE_8)
+                            
+                            auto s = instr.GetOpd(0).GetSize();
+                            
+                            if (s == O_SIZE_8)
                             {
-                                if (!detail::IsInt8(rel)) // choose near jump instruction 
+                                if (!detail::IsInt8(r)) // choose near jump instruction 
                                 {
                                     instr.GetOpd(0) = Imm32(0x7FFFFFFF);
 
@@ -214,6 +223,7 @@ namespace jitasm
                                     break;
                                 }
                             }
+                            
                             if (size_t(d - 1) < instrs_.size())
                             {
                                 auto & target = instrs_[d - 1];
@@ -236,24 +246,26 @@ namespace jitasm
                 {
                     if (IsJump(instr.GetID()))
                     {
-                        size_t d = (size_t)instr.GetOpd(1).GetImm();
-                        int rel = (int)offsets[d] - offsets[i + 1];
-                        OpdSize size = instr.GetOpd(0).GetSize();
-                        if (size == O_SIZE_8)
+                        auto d = size_t(instr.GetOpd(1).GetImm());
+                        auto r = int(offsets[d] - offsets[i + 1]);
+                        auto s = instr.GetOpd(0).GetSize();
+
+                        /**/ if (s == O_SIZE_8)
                         {
-                            instr.GetOpd(0) = Imm8((uint8)rel);
+                            instr.GetOpd(0) = Imm8(uint8(r));
                         }
-                        else if (size == O_SIZE_32)
+                        else if (s == O_SIZE_32)
                         {
-                            instr.GetOpd(0) = Imm32((uint32)rel);
+                            instr.GetOpd(0) = Imm32(uint32(r));
                             instr.GetOpd(1) = detail::Opd();
                         }
                     }
                     else if (HasRIP(instr.GetOpd(1)))
                     {
-                        size_t d = (size_t)instr.GetOpd(1).GetDisp();
-                        int rel = (int)offsets[d] - offsets[i + 1];
-                        instr.GetOpd(1).disp_ = sint64(rel);
+                        auto d = size_t(instr.GetOpd(1).GetDisp());
+                        auto r = int(offsets[d] - offsets[i + 1]);
+
+                        instr.GetOpd(1).disp_ = sint64(r);
                     }
                     ++i;
                 }
@@ -305,11 +317,6 @@ namespace jitasm
                 instrs_.push_back(Instr(id, opd1, opd2, opd3, opd4, opd5, opd6));
             }
 
-            //void AppendInstr(InstrID id, uint32 opcode, uint32 encoding_flag, detail::Opd const & opd1 = detail::Opd(), detail::Opd const & opd2 = detail::Opd(), detail::Opd const & opd3 = detail::Opd(), detail::Opd const & opd4 = detail::Opd(), detail::Opd const & opd5 = detail::Opd(), detail::Opd const & opd6 = detail::Opd())
-            //{
-            //	instrs_.push_back(Instr(id, opcode, encoding_flag, opd1, opd2, opd3, opd4, opd5, opd6));
-            //}
-
             void AppendSpecial(InstrID id, uint32 opcode, detail::Opd const & opd1 = detail::Opd(), detail::Opd const & opd2 = detail::Opd(), detail::Opd const & opd3 = detail::Opd(), detail::Opd const & opd4 = detail::Opd(), detail::Opd const & opd5 = detail::Opd(), detail::Opd const & opd6 = detail::Opd())
             {
                 instrs_.push_back(Instr(id, opcode, E_SPECIAL, opd1, opd2, opd3, opd4, opd5, opd6));
@@ -335,22 +342,22 @@ namespace jitasm
                 AppendSpecial(I_SOURCE, 0, Imm64(source_key));
             }
 
-            void db(const Imm8& imm)
+            void db(Imm8 const & imm)
             {
                 AppendSpecial(I_DB, 0, imm);
             }
 
-            void dw(const Imm16& imm)
+            void dw(Imm16 const & imm)
             {
                 AppendSpecial(I_DW, 0, imm);
             }
 
-            void dd(const Imm32& imm)
+            void dd(Imm32 const & imm)
             {
                 AppendSpecial(I_DD, 0, imm);
             }
 
-            void dq(const Imm64& imm)
+            void dq(Imm64 const & imm)
             {
                 AppendSpecial(I_DQ, 0, imm);
             }

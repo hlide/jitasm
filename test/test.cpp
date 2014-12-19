@@ -40,8 +40,28 @@ static void capstone_Dump(FILE * out, cs_mode mode, void * code, size_t size)
             for (size_t j = 0; j < count; ++j)
             {
                 capstone_Disassemble(out, insn[j]);
+                size = size - insn[j].size;
+                code = (void *)((uint8_t *)code + insn[j].size);
             }
             ::cs_free(insn, count);
+
+            if (size)
+            {
+                char address[32];
+
+                size = min(size, 16);
+
+                sprintf(address, "(%2d):", size);
+
+                char bytes[64], *p = bytes;
+
+                for (size_t i = 0; i < size; ++i)
+                {
+                    p += sprintf(p, "%02X", size_t(((uint8_t const *)code)[i]));
+                }
+
+                fprintf(out, "%s %16s unknown instruction(s)\r\n", address, bytes);
+            }
         }
 
         ::cs_close(&handle);
@@ -196,8 +216,6 @@ CodeBuffer      CodeBuffer::singleton_;
 
 struct Frontend_x86_32 : jitasm::x86_32::Frontend$CRTP< Frontend_x86_32 >, CodeBuffer
 {
-    typedef ::CodeBuffer CodeBuffer;
-
     void InternalMain()
     {
         using namespace jitasm::x86_32;
@@ -206,11 +224,11 @@ struct Frontend_x86_32 : jitasm::x86_32::Frontend$CRTP< Frontend_x86_32 >, CodeB
         Imm16 i16(0x5555);
         Imm32 i32(0x55555555);
 
-        AppendInstr(I_ADD, al, i8);
-        AppendInstr(I_ADD, ax, i16);
-        AppendInstr(I_ADD, eax, i32);
+         AppendInstr(I_ADD, al, i8);
+         AppendInstr(I_ADD, ax, i16);
+         AppendInstr(I_ADD, eax, i32);
         
-        AppendInstr(I_ALIGN, Imm8(5));
+        //AppendInstr(I_ALIGN, Imm8(5));
 
         AppendInstr(I_ADD, ax, i8);
         AppendInstr(I_ADD, eax, i8);
@@ -226,6 +244,9 @@ struct Frontend_x86_32 : jitasm::x86_32::Frontend$CRTP< Frontend_x86_32 >, CodeB
         AppendInstr(I_ADD, ax, dx);
         AppendInstr(I_ADD, eax, edx);
 
+        AppendInstr(I_ADCX, eax, edx);
+        AppendInstr(I_ADCX, eax, ptr[edx + ebx * 2 + 16]);
+
         AppendInstr(I_ADD, eax, ptr[edx + ebx * 2 + 16]);
         AppendInstr(I_ADD, ptr[edx + ebx * 2 + 16], eax);
 
@@ -240,8 +261,6 @@ struct Frontend_x86_32 : jitasm::x86_32::Frontend$CRTP< Frontend_x86_32 >, CodeB
 
 struct Frontend_x86_64 : jitasm::x86_64::Frontend$CRTP< Frontend_x86_64 >, CodeBuffer
 {
-    typedef ::CodeBuffer CodeBuffer;
-
     void InternalMain()
     {
         using namespace jitasm::x86_64;

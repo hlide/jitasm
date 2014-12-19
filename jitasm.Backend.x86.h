@@ -10,7 +10,7 @@ namespace jitasm
         {
             bool is64_;
 
-            Backend(bool is64, void* buffaddr = nullptr, size_t buffsize = 0)
+            Backend(bool is64, void * buffaddr = nullptr, size_t buffsize = 0)
                 : jitasm::Backend$CRTP< Backend >(buffaddr, buffsize), is64_(is64)
             {
                 memset(buffaddr, 0xCC, buffsize);
@@ -256,7 +256,7 @@ namespace jitasm
                     auto const & reg = opd1;
                     auto const & r_m = opd2;
                     auto const & vex = opd3;
-                    EncodePrefixes(instr.encoding_flag_, reg, r_m, vex);
+                    EncodePrefixes(instr.encoding_flags_, reg, r_m, vex);
                     EncodeOpcode(opcode);
                     EncodeModRM((uint8)(reg.IsImm() ? reg.GetImm() : reg.GetReg().id), r_m);
 
@@ -271,7 +271,7 @@ namespace jitasm
                     auto const & reg = detail::Opd();
                     auto const & r_m = opd1.IsReg() ? opd1 : detail::Opd();
                     auto const & vex = detail::Opd();
-                    EncodePrefixes(instr.encoding_flag_, reg, r_m, vex);
+                    EncodePrefixes(instr.encoding_flags_, reg, r_m, vex);
                     EncodeOpcode(opcode);
                 }
 
@@ -285,7 +285,7 @@ namespace jitasm
 
             void Assemble(Instr & instr)
             {
-                if (0 == (instr.encoding_flag_ & E_ENCODED)) EncodeInstr(instr);
+                if (0 == (instr.encoding_flags_ & E_ENCODED)) EncodeInstr(instr);
 
                 switch (instr.GetID())
                 {
