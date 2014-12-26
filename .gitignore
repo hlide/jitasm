@@ -30,3 +30,5 @@ test/x64/Release
 *.suo
 *.sdf
 *.opensdf
+Debug/
+Release/
