@@ -100,6 +100,27 @@ namespace jitasm
             virtual ~Frontend$CRTP()
             {
             }
+
+            /////////////
+
+            void aaa() { AppendInstr(I_AAA); }
+
+            void aad() { AppendInstr(I_AAD); }
+
+            void aam() { AppendInstr(I_AAM); }
+
+            void aas() { AppendInstr(I_AAS); }
+
+            void adx(Imm8 const & a1) { AppendInstr(I_ADX, a1); }
+
+            void amx(Imm8 const & a1) { AppendInstr(I_AMX, a1); }
+
+            void arpl(Mem16 const & a1, Reg16 const & a2) { AppendInstr(I_ARPL, a1, a2); }
+
+            void bound(Reg16 const & a1, Mem32 const & a2) { AppendInstr(I_BOUND, a1, a2); }
+            void bound(Reg32 const & a1, Mem64 const & a2) { AppendInstr(I_BOUND, a1, a2); }
+
+
         };
     }
 }

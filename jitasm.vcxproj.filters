@@ -54,6 +54,9 @@
     <ClInclude Include="jitasm.CodeBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jitasm.Frontend.x86.wrappers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="jitasm.Backend.x86.cpp">

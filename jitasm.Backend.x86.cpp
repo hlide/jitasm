@@ -19,34 +19,96 @@ namespace jitasm
             template< size_t id, size_t opcode, typename Operand >
             struct Encode$< id, opcode, Operand >
             {
-                static void Encode(Instr & instr)
-                {
-                    JITASM_ASSERT(0 && "unimplemented encoder");
-                }
+            private:
+                static void Encode(Instr & instr);
             };
 
-            template< size_t id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Implicit_AL_AH < a0, a1 > >
+            /////////////
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, None >
             {
                 static void Encode(Instr & instr)
                 {
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = E_ENCODED;
-                    instr.opd_[0] = detail::Dummy(AlterAccess< a0 >(Reg8(AL)));
-                    instr.opd_[1] = detail::Dummy(AlterAccess< a1 >(Reg8(AH)));
                 }
             };
 
-            template< size_t id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Ib_Implicit_AL_AH < a0, a1 > >
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, Jb >
             {
                 static void Encode(Instr & instr)
                 {
                     auto opd0 = instr.opd_[0];
-                    instr.opcode_ = opcode + 256*uint32(uint8(opd0.GetImm()));
-                    instr.encoding_flags_ = E_ENCODED;
-                    instr.opd_[0] = detail::Dummy(AlterAccess< a0 >(Reg8(AL)));
-                    instr.opd_[1] = detail::Dummy(AlterAccess< a1 >(Reg8(AH)));
+                    instr.opd_[0] = Imm8(sint8(opd0.GetImm()));
+                }
+            };
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, Jz >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    if (opd0.GetSize() == O_SIZE_16) instr.opd_[0] = Imm16(sint16(opd0.GetImm()));
+                    else                             instr.opd_[0] = Imm32(sint32(opd0.GetImm()));
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0 >
+            struct Encode$ < id, opcode, Ev < a0 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    instr.opd_[0] = AlterAccess< a0 >(opd0);
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0 >
+            struct Encode$ < id, opcode, Zv < a0 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    instr.opd_[0] = AlterAccess< a0 >(opd0);
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0 >
+            struct Encode$ < id, opcode, Mb < a0 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0 >
+            struct Encode$ < id, opcode, Implicit_rAX < a0 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    instr.opd_[0] = detail::Dummy(AlterAccess< a0 >(Reg64(RAX)));
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0 >
+            struct Encode$ < id, opcode, Ib_Implicit_rAX < a0 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    //auto opd0 = instr.opd_[0];
+                    //instr.opd_[0] = opd0.GetImm();
+                    instr.opd_[1] = detail::Dummy(AlterAccess< a0 >(Reg64(RAX)));
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0, Access a1 >
+            struct Encode$ < id, opcode, Implicit_rDI_rSI < a0, a1 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    instr.opd_[0] = detail::Dummy(AlterAccess< a0 >(Reg64(RDI)));
+                    instr.opd_[1] = detail::Dummy(AlterAccess< a1 >(Reg64(RSI)));
                 }
             };
 
@@ -57,8 +119,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = E_ENCODED;
                     instr.opd_[0] = AlterAccess< a1 >(opd1);
                     instr.opd_[1] = AlterAccess< a0 >(opd0);
                 }
@@ -71,8 +131,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = E_ENCODED;
                     instr.opd_[0] = AlterAccess< a1 >(opd1);
                     instr.opd_[1] = AlterAccess< a0 >(opd0);
                 }
@@ -85,8 +143,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd0.GetSize() == O_SIZE_16 ? (E_OPERAND_SIZE_PREFIX | E_ENCODED) : opd1.GetSize() == O_SIZE_64 ? (E_REXW_PREFIX | E_ENCODED) : E_ENCODED;
                     instr.opd_[0] = AlterAccess< a1 >(opd1);
                     instr.opd_[1] = AlterAccess< a0 >(opd0);
                 }
@@ -99,8 +155,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = E_ENCODED;
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a1 >(opd1);
                 }
@@ -113,8 +167,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd0.GetSize() == O_SIZE_16 ? (E_OPERAND_SIZE_PREFIX | E_ENCODED) : opd1.GetSize() == O_SIZE_64 ? (E_REXW_PREFIX | E_ENCODED) : E_ENCODED;
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a1 >(opd1);
                 }
@@ -127,8 +179,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd0.GetSize() == O_SIZE_16 ? (E_OPERAND_SIZE_PREFIX | E_ENCODED) : E_ENCODED;
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a1 >(opd1);
                 }
@@ -141,12 +191,51 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd1.GetSize() == O_SIZE_64 ? (E_REXW_PREFIX | E_ENCODED) : E_ENCODED;
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a1 >(opd1);
                 }
             };
+
+            template< size_t id, size_t opcode, Access a0, Access a1 >
+            struct Encode$ < id, opcode, Gy_Ey_Ib < a0, a1> >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    auto opd1 = instr.opd_[1];
+                    auto opd2 = instr.opd_[2];
+                    instr.opd_[0] = AlterAccess< a0 >(opd0);
+                    instr.opd_[1] = AlterAccess< a1 >(opd1);
+                    instr.opd_[2] = Imm8(uint8(opd2.GetImm()));
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0, Access a1, Access a2 >
+            struct Encode$ < id, opcode, Eb_AL_Gb < a0, a1, a2 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    auto opd1 = instr.opd_[1];
+                    auto opd2 = instr.opd_[2];
+                    instr.opd_[0] = AlterAccess< a0 >(opd0);
+                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
+                }
+            };
+
+            template< size_t id, size_t opcode, Access a0, Access a1, Access a2 >
+            struct Encode$ < id, opcode, Ev_rAX_Gv < a0, a1, a2 > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    auto opd1 = instr.opd_[1];
+                    auto opd2 = instr.opd_[2];
+                    instr.opd_[0] = AlterAccess< a0 >(opd0);
+                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
+                }
+            };
+
 
             template< size_t id, size_t opcode, Access a0 >
             struct Encode$ < id, opcode, AL_Ib < a0 > >
@@ -155,8 +244,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = E_ENCODED;
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
                 }
@@ -169,8 +256,6 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd0.GetSize() == O_SIZE_16 ? (E_OPERAND_SIZE_PREFIX | E_ENCODED) : opd1.GetSize() == O_SIZE_64 ? (E_REXW_PREFIX | E_ENCODED) : E_ENCODED;
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     if (opd0.GetSize() == O_SIZE_16) instr.opd_[1] = Imm16(sint16(opd1.GetImm()));
                     else                             instr.opd_[1] = Imm32(sint32(opd1.GetImm()));
@@ -184,10 +269,8 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = E_ENCODED;
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
+                    instr.opd_[0] = Imm8(uint8(opd1.GetImm()));
+                    instr.opd_[1] = AlterAccess< a0 >(opd0);
                 }
             };
 
@@ -198,10 +281,8 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd0.GetSize() == O_SIZE_16 ? (E_OPERAND_SIZE_PREFIX | E_ENCODED) : opd1.GetSize() == O_SIZE_64 ? (E_REXW_PREFIX | E_ENCODED) : E_ENCODED;
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
+                    instr.opd_[0] = Imm8(uint8(opd1.GetImm()));
+                    instr.opd_[1] = AlterAccess< a0 >(opd0);
                 }
             };
 
@@ -212,24 +293,9 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd0.GetSize() == O_SIZE_16 ? (E_OPERAND_SIZE_PREFIX | E_ENCODED) : opd1.GetSize() == O_SIZE_64 ? (E_REXW_PREFIX | E_ENCODED) : E_ENCODED;
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    if (opd0.GetSize() == O_SIZE_16) instr.opd_[1] = Imm16(sint16(opd1.GetImm()));
-                    else                             instr.opd_[1] = Imm32(sint32(opd1.GetImm()));
-                }
-            };
-
-            template< size_t id, size_t opcode, size_t code >
-            struct Encode$ < id, opcode, Group1 < code > >
-            {
-                static void Encode(Instr & instr)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd0;
-                    instr.opd_[2] = opd1;
+                    if (opd0.GetSize() == O_SIZE_16) instr.opd_[0] = Imm16(sint16(opd1.GetImm()));
+                    else                             instr.opd_[0] = Imm32(sint32(opd1.GetImm()));
+                    instr.opd_[1] = AlterAccess< a0 >(opd0);
                 }
             };
 
@@ -242,8 +308,6 @@ namespace jitasm
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
                     auto opd2 = instr.opd_[2];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd1.GetSize() == O_SIZE_64 ? (E_VEX_LZ | E_VEX_0F38 | E_VEX_W1 | E_ENCODED) : (E_VEX_LZ | E_VEX_0F38 | E_VEX_W0 | E_ENCODED);
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a2 >(opd2);
                     instr.opd_[2] = AlterAccess< a1 >(opd1);
@@ -258,8 +322,6 @@ namespace jitasm
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
                     auto opd2 = instr.opd_[2];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd1.GetSize() == O_SIZE_64 ? (E_VEX_LZ | E_VEX_0F38 | E_VEX_W1 | E_ENCODED) : (E_VEX_LZ | E_VEX_0F38 | E_VEX_W0 | E_ENCODED);
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a1 >(opd1);
                     instr.opd_[2] = AlterAccess< a2 >(opd2);
@@ -275,8 +337,6 @@ namespace jitasm
                     auto opd1 = instr.opd_[1];
                     auto opd2 = instr.opd_[2];
                     auto opd3 = instr.opd_[3];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd1.GetSize() == O_SIZE_64 ? (E_VEX_LZ | E_VEX_0F38 | E_VEX_W1 | E_ENCODED) : (E_VEX_LZ | E_VEX_0F38 | E_VEX_W0 | E_ENCODED);
                     instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a3 >(opd3);
                     instr.opd_[2] = AlterAccess< a1 >(opd1);
@@ -292,11 +352,60 @@ namespace jitasm
                 {
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
-                    instr.opcode_ = opcode;
-                    instr.encoding_flags_ = opd1.GetSize() == O_SIZE_64 ? (E_VEX_LZ | E_VEX_0F38 | E_VEX_W1 | E_ENCODED) : (E_VEX_LZ | E_VEX_0F38 | E_VEX_W0 | E_ENCODED);
-                    instr.opd_[0] = detail::Opd();
+                    instr.opd_[0] = AlterAccess< a0 >(opd0);
                     instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    instr.opd_[2] = AlterAccess< a0 >(opd0);
+                }
+            };
+
+            /////////////
+
+            template< size_t id, size_t opcode, size_t code >
+            struct Encode$ < id, opcode, Group1 < code > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    auto opd1 = instr.opd_[1];
+                    instr.opd_[0] = Imm8(code);
+                    instr.opd_[1] = opd1;
+                    instr.opd_[2] = opd0;
+                }
+            };
+
+            template< size_t id, size_t opcode, size_t code >
+            struct Encode$ < id, opcode, Group5 < code > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    instr.opd_[0] = Imm8(code);
+                    instr.opd_[1] = opd0;
+                }
+            };
+
+            template< size_t id, size_t opcode, size_t code >
+            struct Encode$ < id, opcode, Group8 < code > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    auto opd1 = instr.opd_[1];
+                    instr.opd_[0] = Imm8(code);
+                    instr.opd_[1] = opd1;
+                    instr.opd_[2] = opd0;
+                }
+            };
+
+            template< size_t id, size_t opcode, size_t code >
+            struct Encode$ < id, opcode, Group15 < code > >
+            {
+                static void Encode(Instr & instr)
+                {
+                    auto opd0 = instr.opd_[0];
+                    auto opd1 = instr.opd_[1];
+                    instr.opd_[0] = Imm8(code);
+                    instr.opd_[1] = opd1;
+                    instr.opd_[2] = opd0;
                 }
             };
 
@@ -308,10 +417,12 @@ namespace jitasm
                     auto opd0 = instr.opd_[0];
                     auto opd1 = instr.opd_[1];
                     instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd0;
-                    instr.opd_[2] = opd1;
+                    instr.opd_[1] = opd1;
+                    instr.opd_[2] = opd0;
                 }
             };
+
+            /////////////
 
             template< size_t id, size_t opcode, size_t flags >
             struct Encode$ < id, opcode, EncodingFlags < flags > >
@@ -322,6 +433,87 @@ namespace jitasm
                 }
             };
 
+            /////////////
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, OSb >
+            {
+                static void Encode(Instr & instr)
+                {
+                }
+            };
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, OSw >
+            {
+                static void Encode(Instr & instr)
+                {
+                    instr.encoding_flags_ |= E_OPERAND_SIZE_PREFIX;
+                }
+            };
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, OSq >
+            {
+                static void Encode(Instr & instr)
+                {
+                    instr.encoding_flags_ |= E_REXW_PREFIX;
+                }
+            };
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, OSv >
+            {
+                static void Encode(Instr & instr)
+                {
+                    switch (instr.GetOpd(0).GetSize())
+                    {
+                    case O_SIZE_16:
+                        instr.encoding_flags_ |= E_OPERAND_SIZE_PREFIX;
+                        break;
+                    case O_SIZE_64:
+                        instr.encoding_flags_ |= E_REXW_PREFIX;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            };
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, OSy >
+            {
+                static void Encode(Instr & instr)
+                {
+                    switch (instr.GetOpd(0).GetSize())
+                    {
+                    case O_SIZE_64:
+                        instr.encoding_flags_ |= instr.encoding_flags_ & (E_VEX_128 | E_VEX_256) ? E_VEX_W1 : E_REXW_PREFIX;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            };
+
+            template< size_t id, size_t opcode >
+            struct Encode$ < id, opcode, OSz >
+            {
+                static void Encode(Instr & instr)
+                {
+                    switch (instr.GetOpd(0).GetSize())
+                    {
+                    case O_SIZE_16:
+                        instr.encoding_flags_ |= E_OPERAND_SIZE_PREFIX;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            };
+
+            /////////////
+
             template< InstrID id >
             struct Opcode$
             {
@@ -331,71 +523,246 @@ namespace jitasm
                 }
             };
 
-            template< size_t id, size_t opcode, typename Operand, typename ...Rest > using Opcode___ =
-                Opcode < id, opcode, Operand, Rest... >
-                ;
+            template<> struct Opcode$< I_AAA > : Opcode < I_AAA, 0x00000037, Implicit_rAX < RW > > {};
 
-            template< InstrID id, size_t code, Access a0, Access a1 > using OpcodeALU =
+            template<> struct Opcode$< I_AAD > : Opcode < I_AAD, 0x0000D505, Implicit_rAX < RW > > {};
+
+            template<> struct Opcode$< I_AAM > : Opcode < I_AAM, 0x0000D405, Implicit_rAX < RW > > {};
+
+            template<> struct Opcode$< I_AAS > : Opcode < I_AAS, 0x0000003F, Implicit_rAX < RW > > {};
+
+            template<> struct Opcode$< I_ADC > :
                 Switch
                 <
-                    Opcode < id, (0x00000000 + 8 * code), Eb_Gb < a0, a1 > >,
-                    Opcode < id, (0x00000001 + 8 * code), Ev_Gv < a0, a1 > >,
-                    Opcode < id, (0x00000002 + 8 * code), Gb_Eb < a0, a1 > >,
-                    Opcode < id, (0x00000003 + 8 * code), Gv_Ev < a0, a1 > >,
+                /**/ Opcode < I_ADC, 0x00000012, Gb_Eb < RW, R >, OSb >,
+                /**/ Opcode < I_ADC, 0x00000013, Gv_Ev < RW, R >, OSv >,
+                /**/ Opcode < I_ADC, 0x00000010, Eb_Gb < RW, R >, OSb >,
+                /**/ Opcode < I_ADC, 0x00000011, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_ADC, 0x00000014, AL_Ib < RW >, OSb >,
+                /**/ Opcode < I_ADC, 0x00000080, Eb_Ib < RW >, OSb, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000083, Ev_Ib < RW >, OSv, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000015, rAX_Iz < RW >, OSv >,
+                /**/ Opcode < I_ADC, 0x00000081, Ev_Iz < RW >, OSv, Group1 <2> >
+                > {};
 
-                    Opcode < id, (0x00000004 + 8 * code), AL_Ib < a0 > >,
-                    Opcode < id, (0x00000080 + 0 * code), Eb_Ib < a0 >, Group1 <code> >,
+            template<> struct Opcode$< I_ADD > :
+                Switch
+                <
+                /**/ Opcode < I_ADD, 0x00000002, Gb_Eb < RW, R >, OSb >,
+                /**/ Opcode < I_ADD, 0x00000003, Gv_Ev < RW, R >, OSv >,
+                /**/ Opcode < I_ADD, 0x00000000, Eb_Gb < RW, R >, OSb >,
+                /**/ Opcode < I_ADD, 0x00000001, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_ADD, 0x00000004, AL_Ib < RW > >,
+                /**/ Opcode < I_ADD, 0x00000080, Eb_Ib < RW >, OSb, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000083, Ev_Ib < RW >, OSv, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000005, rAX_Iz < RW >, OSv >,
+                /**/ Opcode < I_ADD, 0x00000081, Ev_Iz < RW >, OSv, Group1 <0> >
+                > {};
 
-                    Opcode < id, (0x00000083 + 0 * code), Ev_Ib < a0 >, Group1 <code> >,
-                    Opcode < id, (0x00000005 + 8 * code), rAX_Iz < a0 > >,
-                    Opcode < id, (0x00000081 + 0 * code), Ev_Iz < a0 >, Group1 <code> >
-                >
-                ;
+            template<> struct Opcode$< I_ADX > : Opcode < I_ADX, 0x000000D5, Ib_Implicit_rAX < RW > > {};
 
-            template<> struct Opcode$< I_AAA   > : Opcode___ < I_AAA, 0x00000037, Implicit_AL_AH < RW, W > > {};
-            template<> struct Opcode$< I_AAD   > : Opcode___ < I_AAD, 0x000005D5, Implicit_AL_AH < RW, W > > {};
-            template<> struct Opcode$< I_AAM   > : Opcode___ < I_AAM, 0x000005D4, Implicit_AL_AH < RW, W > > {};
-            template<> struct Opcode$< I_AAS   > : Opcode___ < I_AAS, 0x0000003F, Implicit_AL_AH < RW, W > > {};
-            template<> struct Opcode$< I_ADC   > : OpcodeALU < I_ADC, 2, RW, R > {};
-            template<> struct Opcode$< I_ADD   > : OpcodeALU < I_ADD, 0, RW, R > {};
-            template<> struct Opcode$< I_ADX   > : Opcode___ < I_AAD, 0x000000D5, Ib_Implicit_AL_AH < RW, W > > {};
-            template<> struct Opcode$< I_AND   > : OpcodeALU < I_AND, 4, RW, R > {};
-            template<> struct Opcode$< I_ARPL  > : Opcode___ < I_ARPL, 0x00000063, Ew_Gw < RW, R > > {};
-            template<> struct Opcode$< I_BOUND > : Opcode___ < I_BOUND, 0x00000062, Gv_Ma < R, R > > {};
-            template<> struct Opcode$< I_BSF   > : Opcode___ < I_BSF, 0x00000FBC, Gv_Ev < RW, R > > {};
-            template<> struct Opcode$< I_BSR   > : Opcode___ < I_BSR, 0x00000FBD, Gv_Ev < RW, R > > {};
+            template<> struct Opcode$< I_AMX > : Opcode < I_AMX, 0x000000D4, Ib_Implicit_rAX < RW > > {};
 
-            template<> struct Opcode$< I_OR  > : OpcodeALU < I_OR, 1, RW, R > {};
-            template<> struct Opcode$< I_SBB > : OpcodeALU < I_SBB, 3, RW, R > {};
-            template<> struct Opcode$< I_SUB > : OpcodeALU < I_SUB, 5, RW, R > {};
-            template<> struct Opcode$< I_XOR > : OpcodeALU < I_XOR, 6, RW, R > {};
-            template<> struct Opcode$< I_CMP > : OpcodeALU < I_CMP, 7, R, R > {};
+            template<> struct Opcode$< I_AND > :
+                Switch
+                <
+                /**/ Opcode < I_AND, 0x00000022, Gb_Eb < RW, R >, OSb >,
+                /**/ Opcode < I_AND, 0x00000023, Gv_Ev < RW, R >, OSv >,
+                /**/ Opcode < I_AND, 0x00000020, Eb_Gb < RW, R >, OSb >,
+                /**/ Opcode < I_AND, 0x00000021, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_AND, 0x00000024, AL_Ib < RW > >,
+                /**/ Opcode < I_AND, 0x00000080, Eb_Ib < RW >, OSb, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000083, Ev_Ib < RW >, OSv, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000025, rAX_Iz < RW >, OSv >,
+                /**/ Opcode < I_AND, 0x00000081, Ev_Iz < RW >, OSv, Group1 <4> >
+                > {};
+
+            template<> struct Opcode$< I_ARPL > : Opcode < I_ARPL, 0x00000063, Ew_Gw < W, R > > {};
+
+            template<> struct Opcode$< I_BOUND > : Opcode < I_BOUND, 0x00000062, Gv_Ma < R, R >, OSz > {};
+
+            template<> struct Opcode$< I_BSF > : Opcode < I_BSF, 0x00000FBC, Gv_Ev < W, R >, OSv > {};
+
+            template<> struct Opcode$< I_BSR > : Opcode < I_BSR, 0x00000FBD, Gv_Ev < W, R >, OSv > {};
+
+            template<> struct Opcode$< I_BSWAP > : Opcode < I_BSWAP, 0x00000FC8, Zv < RW >, OSv > {};
+
+            template<> struct Opcode$< I_BT > :
+                Switch
+                <
+                /**/ Opcode < I_BT, 0x00000FA3, Ev_Gv < W, R >, OSv >,
+                /**/ Opcode < I_BT, 0x00000FBA, Ev_Ib < W >, OSv, Group8 <4> >
+                > {};
+
+            template<> struct Opcode$< I_BTC > :
+                Switch
+                <
+                /**/ Opcode < I_BTC, 0x00000FBB, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_BTC, 0x00000FBA, Ev_Ib < RW >, OSv, Group8 <7> >
+                > {};
+
+            template<> struct Opcode$< I_BTR > :
+                Switch
+                <
+                /**/ Opcode < I_BTR, 0x00000FB3, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_BTR, 0x00000FBA, Ev_Ib < RW >, OSv, Group8 <6> >
+                > {};
+
+            template<> struct Opcode$< I_BTS > :
+                Switch
+                <
+                /**/ Opcode < I_BTS, 0x00000FAB, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_BTS, 0x00000FBA, Ev_Ib < RW >, OSv, Group8 <5> >
+                > {};
+
+            template<> struct Opcode$< I_CALL > :
+                Switch
+                <
+                /**/ Opcode < I_CALL, 0x000000E8, Jz, OSz >,
+                /**/ Opcode < I_CALL, 0x000000FF, Ev < R >, OSv, Group5 <2> >
+                > {};
+
+            template<> struct Opcode$< I_CBW > : Opcode < I_CBW, 0x000000098, Implicit_rAX < RW >, OSw > {};
+
+            template<> struct Opcode$< I_CWDE > : Opcode < I_CWDE, 0x000000098, Implicit_rAX < RW > >{};
+
+            template<> struct Opcode$< I_CDQE > : Opcode < I_CDQE, 0x000000098, Implicit_rAX < RW >, OSq > {};
+
+            template<> struct Opcode$< I_CDQ > : Opcode < I_CDQ, 0x000000099, Implicit_rAX < RW > > {};
+
+            template<> struct Opcode$< I_CLC > : Opcode < I_CLC, 0x0000000F8, None > {};
+
+            template<> struct Opcode$< I_CLD > : Opcode < I_CLD, 0x0000000FC, None > {};
+
+            template<> struct Opcode$< I_CLFLUSH > : Opcode < I_CLFLUSH, 0x000000FAE, Mb< W >, Group15 <7> >{};
+            
+            template<> struct Opcode$< I_CLI > : Opcode < I_CLI, 0x0000000FA, None > {};
+
+            template<> struct Opcode$< I_CLTS > : Opcode < I_CLTS, 0x000000F06, None > {};
+
+            template<> struct Opcode$< I_CMC > : Opcode < I_CMC, 0x0000000F5, None >{};
+
+            template<> struct Opcode$< I_CMOVcc > : Opcode < I_CMOVcc, 0x00000F40, Gv_Ev< RW, R >, OSv > {};
+
+            template<> struct Opcode$< I_CMP > :
+                Switch
+                <
+                /**/ Opcode < I_CMP, 0x0000003A, Gb_Eb < R, R >, OSb >,
+                /**/ Opcode < I_CMP, 0x0000003B, Gv_Ev < R, R >, OSv >,
+                /**/ Opcode < I_CMP, 0x00000038, Eb_Gb < R, R >, OSb >,
+                /**/ Opcode < I_CMP, 0x00000039, Ev_Gv < R, R >, OSv >,
+                /**/ Opcode < I_CMP, 0x0000003C, AL_Ib < R > >,
+                /**/ Opcode < I_CMP, 0x00000080, Eb_Ib < R >, OSb, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x00000083, Ev_Ib < R >, OSv, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x0000003D, rAX_Iz < R >, OSv >,
+                /**/ Opcode < I_CMP, 0x00000081, Ev_Iz < R >, OSv, Group1 <7> >
+                > {};
+
+            template<> struct Opcode$< I_CMPS_B  > : Opcode < I_CMPS_B, 0x000000A6, Implicit_rDI_rSI < R, R > > {};
+
+            template<> struct Opcode$< I_CMPS_W  > : Opcode < I_CMPS_W, 0x000000A7, Implicit_rDI_rSI < R, R >, OSw > {};
+
+            template<> struct Opcode$< I_CMPS_D  > : Opcode < I_CMPS_D, 0x000000A7, Implicit_rDI_rSI < R, R > > {};
+
+            template<> struct Opcode$< I_CMPS_Q  > : Opcode < I_CMPS_Q, 0x000000A7, Implicit_rDI_rSI < R, R >, OSq > {};
+
+            template<> struct Opcode$< I_CMPXCHG > :
+                Switch
+                <
+                /**/ Opcode < I_CMP, 0x0000003A, Gb_Eb < R, R >, OSb >,
+                /**/ Opcode < I_CMP, 0x0000003B, Gv_Ev < R, R >, OSv >,
+                /**/ Opcode < I_CMP, 0x00000038, Eb_Gb < R, R >, OSb >,
+                /**/ Opcode < I_CMP, 0x00000039, Ev_Gv < R, R >, OSv >,
+                /**/ Opcode < I_CMP, 0x0000003C, AL_Ib < R > >,
+                /**/ Opcode < I_CMP, 0x00000080, Eb_Ib < R >, OSb, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x00000083, Ev_Ib < R >, OSv, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x0000003D, rAX_Iz < R >, OSv >,
+                /**/ Opcode < I_CMP, 0x00000081, Ev_Iz < R >, OSv, Group1 <7> >
+                > {};
+
+            //template<> struct Opcode$< I_CMPXCHG > : OpcodeCXU < I_CMPXCHG, 0x00000FB0, Implicit_rDI_rSI < R, R > >{};
+
+
+            template<> struct Opcode$< I_OR  > :
+                Switch
+                <
+                /**/ Opcode < I_OR, 0x0000000A, Gb_Eb < RW, R >, OSb >,
+                /**/ Opcode < I_OR, 0x0000000B, Gv_Ev < RW, R >, OSv >,
+                /**/ Opcode < I_OR, 0x00000008, Eb_Gb < RW, R >, OSb >,
+                /**/ Opcode < I_OR, 0x00000009, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_OR, 0x0000000C, AL_Ib < RW > >,
+                /**/ Opcode < I_OR, 0x00000080, Eb_Ib < RW >, OSb, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x00000083, Ev_Ib < RW >, OSv, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x0000000D, rAX_Iz < RW >, OSv >,
+                /**/ Opcode < I_OR, 0x00000081, Ev_Iz < RW >, OSv, Group1 <1> >
+                > {};
+
+            template<> struct Opcode$< I_SBB > :
+                Switch
+                <
+                /**/ Opcode < I_SBB, 0x0000001A, Gb_Eb < RW, R >, OSb >,
+                /**/ Opcode < I_SBB, 0x0000001B, Gv_Ev < RW, R >, OSv >,
+                /**/ Opcode < I_SBB, 0x00000018, Eb_Gb < RW, R >, OSb >,
+                /**/ Opcode < I_SBB, 0x00000019, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_SBB, 0x0000001C, AL_Ib < RW > >,
+                /**/ Opcode < I_SBB, 0x00000080, Eb_Ib < RW >, OSb, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x00000083, Ev_Ib < RW >, OSv, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x0000001D, rAX_Iz < RW >, OSv >,
+                /**/ Opcode < I_SBB, 0x00000081, Ev_Iz < RW >, OSv, Group1 <3> >
+                > {};
+
+            template<> struct Opcode$< I_SUB > :
+                Switch
+                <
+                /**/ Opcode < I_SUB, 0x0000002A, Gb_Eb < RW, R >, OSb >,
+                /**/ Opcode < I_SUB, 0x0000002B, Gv_Ev < RW, R >, OSv >,
+                /**/ Opcode < I_SUB, 0x00000028, Eb_Gb < RW, R >, OSb >,
+                /**/ Opcode < I_SUB, 0x00000029, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_SUB, 0x0000002C, AL_Ib < RW > >,
+                /**/ Opcode < I_SUB, 0x00000080, Eb_Ib < RW >, OSb, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x00000083, Ev_Ib < RW >, OSv, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x0000002D, rAX_Iz < RW >, OSv >,
+                /**/ Opcode < I_SUB, 0x00000081, Ev_Iz < RW >, OSv, Group1 <5> >
+                > {};
+
+            template<> struct Opcode$< I_XOR > :
+                Switch
+                <
+                /**/ Opcode < I_XOR, 0x00000032, Gb_Eb < RW, R >, OSb >,
+                /**/ Opcode < I_XOR, 0x00000033, Gv_Ev < RW, R >, OSv >,
+                /**/ Opcode < I_XOR, 0x00000030, Eb_Gb < RW, R >, OSb >,
+                /**/ Opcode < I_XOR, 0x00000031, Ev_Gv < RW, R >, OSv >,
+                /**/ Opcode < I_XOR, 0x00000034, AL_Ib < RW > >,
+                /**/ Opcode < I_XOR, 0x00000080, Eb_Ib < RW >, OSb, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000083, Ev_Ib < RW >, OSv, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000035, rAX_Iz < RW >, OSv >,
+                /**/ Opcode < I_XOR, 0x00000081, Ev_Iz < RW >, OSv, Group1 <6> >
+                > {};
 
             // Group LZCNT
-            template<> struct Opcode$< I_LZCNT  > : Opcode___ < I_LZCNT, 0x00000FBD, Gv_Ev < W, R >, EncodingFlags < E_MANDATORY_PREFIX_F3 > > {};
+            template<> struct Opcode$< I_LZCNT > : Opcode < I_LZCNT, 0x00000FBD, Gv_Ev < W, R >, EncodingFlags < E_MANDATORY_PREFIX_F3 >, OSv >{};
 
             // Group BIM1
-            template<> struct Opcode$< I_ANDN   > : Opcode___ < I_ANDN, 0x000000F2, Gy_By_Ey < W, R, R > > {};
-            template<> struct Opcode$< I_BEXTR  > : Opcode___ < I_ANDN, 0x000000F7, Gy_Ey_By < W, R, R > > {};
-            template<> struct Opcode$< I_BLSI   > : Opcode___ < I_BLSI, 0x000000F3, By_Ey < W, R >, Group17 < 3 > > {};
-            template<> struct Opcode$< I_BLSMSK > : Opcode___ < I_BLSMSK, 0x000000F3, By_Ey < W, R >, Group17 < 2 > > {};
-            template<> struct Opcode$< I_BLSR   > : Opcode___ < I_BLSR, 0x000000F3, By_Ey < W, R >, Group17 < 1 > > {};
-            template<> struct Opcode$< I_TZCNT  > : Opcode___ < I_TZCNT, 0x00000FBC, Gv_Ev < W, R >, EncodingFlags < E_MANDATORY_PREFIX_F3 > > {};
+            template<> struct Opcode$< I_ANDN   > : Opcode < I_ANDN, 0x000000F2, Gy_By_Ey < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_0F38 >, OSy >{};
+            template<> struct Opcode$< I_BEXTR  > : Opcode < I_BEXTR, 0x000000F7, Gy_Ey_By < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_0F38 >, OSy >{};
+            template<> struct Opcode$< I_BLSI   > : Opcode < I_BLSI, 0x000000F3, By_Ey < W, R >, EncodingFlags < E_VEX_LZ | E_VEX_0F38 >, OSy, Group17 < 3 > >{};
+            template<> struct Opcode$< I_BLSMSK > : Opcode < I_BLSMSK, 0x000000F3, By_Ey < W, R >, EncodingFlags < E_VEX_LZ | E_VEX_0F38 >, OSy, Group17 < 2 > >{};
+            template<> struct Opcode$< I_BLSR   > : Opcode < I_BLSR, 0x000000F3, By_Ey < W, R >, EncodingFlags < E_VEX_LZ | E_VEX_0F38 >, OSy, Group17 < 1 > >{};
+            template<> struct Opcode$< I_TZCNT  > : Opcode < I_TZCNT, 0x00000FBC, Gv_Ev < W, R >, EncodingFlags < E_MANDATORY_PREFIX_F3 >, OSv >{};
 
             // Group BIM2
-            template<> struct Opcode$< I_BZHI > : Opcode___ < I_BZHI, 0x000000F5, Gy_Ey_By < W, R, R > > {};
-            template<> struct Opcode$< I_MULX > : Opcode___ < I_MULX, 0x000000F6, By_Gy_rDX_Ey < W, W, R, R >, EncodingFlags < E_MANDATORY_PREFIX_F2 > > {};
-            template<> struct Opcode$< I_PDEP > : Opcode___ < I_PDEP, 0x000000F5, Gy_By_Ey < W, R, R >, EncodingFlags < E_MANDATORY_PREFIX_F2 > > {};
-            template<> struct Opcode$< I_PEXT > : Opcode___ < I_PEXT, 0x000000F5, Gy_By_Ey < W, R, R >, EncodingFlags < E_MANDATORY_PREFIX_F3 > > {};
-            template<> struct Opcode$< I_RORX > : Opcode___ < I_RORX, 0x000F3AF0, Gy_Ey_Ib < W, R >, EncodingFlags < E_MANDATORY_PREFIX_F2 > > {};
-            template<> struct Opcode$< I_SARX > : Opcode___ < I_SARX, 0x000000F7, Gy_Ey_By < W, R, R >, EncodingFlags < E_MANDATORY_PREFIX_F3 > > {};
-            template<> struct Opcode$< I_SHLX > : Opcode___ < I_SHLX, 0x000000F7, Gy_Ey_By < W, R, R >, EncodingFlags < E_MANDATORY_PREFIX_66 > > {};
-            template<> struct Opcode$< I_SHRX > : Opcode___ < I_SHRX, 0x000000F7, Gy_Ey_By < W, R, R >, EncodingFlags < E_MANDATORY_PREFIX_F2 > > {};
+            template<> struct Opcode$< I_BZHI > : Opcode < I_BZHI, 0x000000F5, Gy_Ey_By < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_0F38 >, OSy >{};
+            template<> struct Opcode$< I_MULX > : Opcode < I_MULX, 0x000000F6, By_Gy_rDX_Ey < W, W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_F2_0F38 >, OSy >{};
+            template<> struct Opcode$< I_PDEP > : Opcode < I_PDEP, 0x000000F5, Gy_By_Ey < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_F2_0F38 >, OSy >{};
+            template<> struct Opcode$< I_PEXT > : Opcode < I_PEXT, 0x000000F5, Gy_By_Ey < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_F3_0F38 >, OSy >{};
+            template<> struct Opcode$< I_RORX > : Opcode < I_RORX, 0x000000F0, Gy_Ey_Ib < W, R    >, EncodingFlags < E_VEX_LZ | E_VEX_F2_0F3A >, OSy >{};
+            template<> struct Opcode$< I_SARX > : Opcode < I_SARX, 0x000000F7, Gy_Ey_By < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_F3_0F38 >, OSy >{};
+            template<> struct Opcode$< I_SHLX > : Opcode < I_SHLX, 0x000000F7, Gy_Ey_By < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_66_0F38 >, OSy >{};
+            template<> struct Opcode$< I_SHRX > : Opcode < I_SHRX, 0x000000F7, Gy_Ey_By < W, R, R >, EncodingFlags < E_VEX_LZ | E_VEX_F2_0F38 >, OSy >{};
 
             // Group ADX
-            template<> struct Opcode$< I_ADCX > : Opcode___ < I_ADCX, 0x000F38F6, Gy_Ey< RW, W >, EncodingFlags < E_MANDATORY_PREFIX_66 > > {};
-            template<> struct Opcode$< I_ADOX > : Opcode___ < I_ADOX, 0x000F38F6, Gy_Ey< RW, W >, EncodingFlags < E_MANDATORY_PREFIX_F3 > > {};
-
+            template<> struct Opcode$< I_ADCX > : Opcode < I_ADCX, 0x000F38F6, Gy_Ey< RW, W >, EncodingFlags < E_MANDATORY_PREFIX_66 >, OSy >{};
+            template<> struct Opcode$< I_ADOX > : Opcode < I_ADOX, 0x000F38F6, Gy_Ey< RW, W >, EncodingFlags < E_MANDATORY_PREFIX_F3 >, OSy >{};
         }
 
         void Backend::EncodeInstr(Instr & instr)
@@ -472,38 +839,17 @@ namespace jitasm
             case I_CLI:                 encoder::Opcode$< I_CLI >::Encode(instr); break;
             case I_CLTS:                encoder::Opcode$< I_CLTS >::Encode(instr); break;
             case I_CMC:                 encoder::Opcode$< I_CMC >::Encode(instr); break;
-            case I_CMOVA:               encoder::Opcode$< I_CMOVA >::Encode(instr); break;
-            case I_CMOVAE:              encoder::Opcode$< I_CMOVAE >::Encode(instr); break;
-            case I_CMOVB:               encoder::Opcode$< I_CMOVB >::Encode(instr); break;
-            case I_CMOVBE:              encoder::Opcode$< I_CMOVBE >::Encode(instr); break;
-            case I_FCMOVBE:             encoder::Opcode$< I_FCMOVBE >::Encode(instr); break;
-            case I_FCMOVB:              encoder::Opcode$< I_FCMOVB >::Encode(instr); break;
-            case I_CMOVE:               encoder::Opcode$< I_CMOVE >::Encode(instr); break;
-            case I_FCMOVE:              encoder::Opcode$< I_FCMOVE >::Encode(instr); break;
-            case I_CMOVG:               encoder::Opcode$< I_CMOVG >::Encode(instr); break;
-            case I_CMOVGE:              encoder::Opcode$< I_CMOVGE >::Encode(instr); break;
-            case I_CMOVL:               encoder::Opcode$< I_CMOVL >::Encode(instr); break;
-            case I_CMOVLE:              encoder::Opcode$< I_CMOVLE >::Encode(instr); break;
-            case I_FCMOVNBE:            encoder::Opcode$< I_FCMOVNBE >::Encode(instr); break;
-            case I_FCMOVNB:             encoder::Opcode$< I_FCMOVNB >::Encode(instr); break;
-            case I_CMOVNE:              encoder::Opcode$< I_CMOVNE >::Encode(instr); break;
-            case I_FCMOVNE:             encoder::Opcode$< I_FCMOVNE >::Encode(instr); break;
-            case I_CMOVNO:              encoder::Opcode$< I_CMOVNO >::Encode(instr); break;
-            case I_CMOVNP:              encoder::Opcode$< I_CMOVNP >::Encode(instr); break;
-            case I_FCMOVNU:             encoder::Opcode$< I_FCMOVNU >::Encode(instr); break;
-            case I_CMOVNS:              encoder::Opcode$< I_CMOVNS >::Encode(instr); break;
-            case I_CMOVO:               encoder::Opcode$< I_CMOVO >::Encode(instr); break;
-            case I_CMOVP:               encoder::Opcode$< I_CMOVP >::Encode(instr); break;
-            case I_FCMOVU:              encoder::Opcode$< I_FCMOVU >::Encode(instr); break;
-            case I_CMOVS:               encoder::Opcode$< I_CMOVS >::Encode(instr); break;
+            case I_CMOVcc:              encoder::Opcode$< I_CMOVcc >::Encode(instr); break;
+            case I_FCMOVcc:             encoder::Opcode$< I_FCMOVcc >::Encode(instr); break;
             case I_CMP:                 encoder::Opcode$< I_CMP >::Encode(instr); break;
+            case I_CMPS_B:              encoder::Opcode$< I_CMPS_B >::Encode(instr); break;
+            case I_CMPS_D:              encoder::Opcode$< I_CMPS_D >::Encode(instr); break;
+            case I_CMPS_Q:              encoder::Opcode$< I_CMPS_Q >::Encode(instr); break;
+            case I_CMPS_W:              encoder::Opcode$< I_CMPS_W >::Encode(instr); break;
             case I_CMPPD:               encoder::Opcode$< I_CMPPD >::Encode(instr); break;
             case I_CMPPS:               encoder::Opcode$< I_CMPPS >::Encode(instr); break;
-            case I_CMPSB:               encoder::Opcode$< I_CMPSB >::Encode(instr); break;
             case I_CMPSD:               encoder::Opcode$< I_CMPSD >::Encode(instr); break;
-            case I_CMPSQ:               encoder::Opcode$< I_CMPSQ >::Encode(instr); break;
             case I_CMPSS:               encoder::Opcode$< I_CMPSS >::Encode(instr); break;
-            case I_CMPSW:               encoder::Opcode$< I_CMPSW >::Encode(instr); break;
             case I_CMPXCHG16B:          encoder::Opcode$< I_CMPXCHG16B >::Encode(instr); break;
             case I_CMPXCHG:             encoder::Opcode$< I_CMPXCHG >::Encode(instr); break;
             case I_CMPXCHG8B:           encoder::Opcode$< I_CMPXCHG8B >::Encode(instr); break;
@@ -659,26 +1005,7 @@ namespace jitasm
             case I_VUCOMISD:            encoder::Opcode$< I_VUCOMISD >::Encode(instr); break;
             case I_VUCOMISS:            encoder::Opcode$< I_VUCOMISS >::Encode(instr); break;
             case I_JCC:                 encoder::Opcode$< I_JCC >::Encode(instr); break;
-//             case I_JAE:                 emitter::Opcode$< I_JAE >::Encode(instr); break;
-//             case I_JA:                  emitter::Opcode$< I_JA >::Encode(instr); break;
-//             case I_JBE:                 emitter::Opcode$< I_JBE >::Encode(instr); break;
-//             case I_JB:                  emitter::Opcode$< I_JB >::Encode(instr); break;
-//             case I_JCXZ:                emitter::Opcode$< I_JCXZ >::Encode(instr); break;
-//             case I_JECXZ:               emitter::Opcode$< I_JECXZ >::Encode(instr); break;
-//             case I_JE:                  emitter::Opcode$< I_JE >::Encode(instr); break;
-//             case I_JGE:                 emitter::Opcode$< I_JGE >::Encode(instr); break;
-//             case I_JG:                  emitter::Opcode$< I_JG >::Encode(instr); break;
-//             case I_JLE:                 emitter::Opcode$< I_JLE >::Encode(instr); break;
-//             case I_JL:                  emitter::Opcode$< I_JL >::Encode(instr); break;
             case I_JMP:                 encoder::Opcode$< I_JMP >::Encode(instr); break;
-//             case I_JNE:                 emitter::Opcode$< I_JNE >::Encode(instr); break;
-//             case I_JNO:                 emitter::Opcode$< I_JNO >::Encode(instr); break;
-//             case I_JNP:                 emitter::Opcode$< I_JNP >::Encode(instr); break;
-//             case I_JNS:                 emitter::Opcode$< I_JNS >::Encode(instr); break;
-//             case I_JO:                  emitter::Opcode$< I_JO >::Encode(instr); break;
-//             case I_JP:                  emitter::Opcode$< I_JP >::Encode(instr); break;
-//             case I_JRCXZ:               emitter::Opcode$< I_JRCXZ >::Encode(instr); break;
-//             case I_JS:                  emitter::Opcode$< I_JS >::Encode(instr); break;
             case I_KANDB:               encoder::Opcode$< I_KANDB >::Encode(instr); break;
             case I_KANDD:               encoder::Opcode$< I_KANDD >::Encode(instr); break;
             case I_KANDNB:              encoder::Opcode$< I_KANDNB >::Encode(instr); break;
@@ -738,9 +1065,6 @@ namespace jitasm
             case I_LODSQ:               encoder::Opcode$< I_LODSQ >::Encode(instr); break;
             case I_LODSW:               encoder::Opcode$< I_LODSW >::Encode(instr); break;
             case I_LOOPCC:              encoder::Opcode$< I_LOOPCC >::Encode(instr); break;
-//             case I_LOOP:                emitter::Opcode$< I_LOOP >::Encode(instr); break;
-//             case I_LOOPE:               emitter::Opcode$< I_LOOPE >::Encode(instr); break;
-//             case I_LOOPNE:              emitter::Opcode$< I_LOOPNE >::Encode(instr); break;
             case I_RETF:                encoder::Opcode$< I_RETF >::Encode(instr); break;
             case I_RETFQ:               encoder::Opcode$< I_RETFQ >::Encode(instr); break;
             case I_LSL:                 encoder::Opcode$< I_LSL >::Encode(instr); break;
@@ -1026,22 +1350,7 @@ namespace jitasm
             case I_SCASD:               encoder::Opcode$< I_SCASD >::Encode(instr); break;
             case I_SCASQ:               encoder::Opcode$< I_SCASQ >::Encode(instr); break;
             case I_SCASW:               encoder::Opcode$< I_SCASW >::Encode(instr); break;
-            case I_SETAE:               encoder::Opcode$< I_SETAE >::Encode(instr); break;
-            case I_SETA:                encoder::Opcode$< I_SETA >::Encode(instr); break;
-            case I_SETBE:               encoder::Opcode$< I_SETBE >::Encode(instr); break;
-            case I_SETB:                encoder::Opcode$< I_SETB >::Encode(instr); break;
-            case I_SETE:                encoder::Opcode$< I_SETE >::Encode(instr); break;
-            case I_SETGE:               encoder::Opcode$< I_SETGE >::Encode(instr); break;
-            case I_SETG:                encoder::Opcode$< I_SETG >::Encode(instr); break;
-            case I_SETLE:               encoder::Opcode$< I_SETLE >::Encode(instr); break;
-            case I_SETL:                encoder::Opcode$< I_SETL >::Encode(instr); break;
-            case I_SETNE:               encoder::Opcode$< I_SETNE >::Encode(instr); break;
-            case I_SETNO:               encoder::Opcode$< I_SETNO >::Encode(instr); break;
-            case I_SETNP:               encoder::Opcode$< I_SETNP >::Encode(instr); break;
-            case I_SETNS:               encoder::Opcode$< I_SETNS >::Encode(instr); break;
-            case I_SETO:                encoder::Opcode$< I_SETO >::Encode(instr); break;
-            case I_SETP:                encoder::Opcode$< I_SETP >::Encode(instr); break;
-            case I_SETS:                encoder::Opcode$< I_SETS >::Encode(instr); break;
+            case I_SETcc:               encoder::Opcode$< I_SETcc >::Encode(instr); break;
             case I_SFENCE:              encoder::Opcode$< I_SFENCE >::Encode(instr); break;
             case I_SGDT:                encoder::Opcode$< I_SGDT >::Encode(instr); break;
             case I_SHA1MSG1:            encoder::Opcode$< I_SHA1MSG1 >::Encode(instr); break;

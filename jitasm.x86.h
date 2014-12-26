@@ -322,25 +322,6 @@ namespace jitasm
                 {
                     return !(*this == rhs);
                 }
-
-                bool Matches(Opd const & rhs) const
-                {
-                    uint8 type = (opdtype_ & O_TYPE_TYPE_MASK);
-                    if (type != (rhs.opdtype_ & O_TYPE_TYPE_MASK) || opdsize_ != rhs.opdsize_)
-                    {
-                        return false;
-                    }
-                    switch (type)
-                    {
-                    case O_TYPE_REG:
-                        return reg_ == rhs.reg_ && reg_assignable_ == rhs.reg_assignable_;
-                    case O_TYPE_MEM:
-                        return base_ == rhs.base_ && index_ == rhs.index_ && scale_ == rhs.scale_ && disp_ == rhs.disp_ && base_size_ == rhs.base_size_ && index_size_ == rhs.index_size_;
-                    case O_TYPE_IMM:
-                        return imm_ == rhs.imm_;
-                    }
-                    return true;
-                }
             };
 
 #pragma pack(pop)
@@ -1244,38 +1225,17 @@ namespace jitasm
             I_CLI,
             I_CLTS,
             I_CMC,
-            I_CMOVA,
-            I_CMOVAE,
-            I_CMOVB,
-            I_CMOVBE,
-            I_FCMOVBE,
-            I_FCMOVB,
-            I_CMOVE,
-            I_FCMOVE,
-            I_CMOVG,
-            I_CMOVGE,
-            I_CMOVL,
-            I_CMOVLE,
-            I_FCMOVNBE,
-            I_FCMOVNB,
-            I_CMOVNE,
-            I_FCMOVNE,
-            I_CMOVNO,
-            I_CMOVNP,
-            I_FCMOVNU,
-            I_CMOVNS,
-            I_CMOVO,
-            I_CMOVP,
-            I_FCMOVU,
-            I_CMOVS,
+            I_CMOVcc,
+            I_FCMOVcc,
             I_CMP,
+            I_CMPS_B,
+            I_CMPS_D,
+            I_CMPS_Q,
+            I_CMPS_W,
             I_CMPPD,
             I_CMPPS,
-            I_CMPSB,
             I_CMPSD,
-            I_CMPSQ,
             I_CMPSS,
-            I_CMPSW,
             I_CMPXCHG16B,
             I_CMPXCHG,
             I_CMPXCHG8B,
@@ -1431,26 +1391,7 @@ namespace jitasm
             I_VUCOMISD,
             I_VUCOMISS,
             I_JCC,
-//             I_JAE,
-//             I_JA,
-//             I_JBE,
-//             I_JB,
-//             I_JCXZ,
-//             I_JECXZ,
-//             I_JE,
-//             I_JGE,
-//             I_JG,
-//             I_JLE,
-//             I_JL,
             I_JMP,
-//             I_JNE,
-//             I_JNO,
-//             I_JNP,
-//             I_JNS,
-//             I_JO,
-//             I_JP,
-//             I_JRCXZ,
-//             I_JS,
             I_KANDB,
             I_KANDD,
             I_KANDNB,
@@ -1510,9 +1451,6 @@ namespace jitasm
             I_LODSQ,
             I_LODSW,
             I_LOOPCC,
-//             I_LOOP,
-//             I_LOOPE,
-//             I_LOOPNE,
             I_RETF,
             I_RETFQ,
             I_LSL,
@@ -1798,22 +1736,7 @@ namespace jitasm
             I_SCASD,
             I_SCASQ,
             I_SCASW,
-            I_SETAE,
-            I_SETA,
-            I_SETBE,
-            I_SETB,
-            I_SETE,
-            I_SETGE,
-            I_SETG,
-            I_SETLE,
-            I_SETL,
-            I_SETNE,
-            I_SETNO,
-            I_SETNP,
-            I_SETNS,
-            I_SETO,
-            I_SETP,
-            I_SETS,
+            I_SETcc,
             I_SFENCE,
             I_SGDT,
             I_SHA1MSG1,
@@ -2500,6 +2423,11 @@ namespace jitasm
             JCC_CXZ, JCC_ECXZ, JCC_RCXZ,
         };
 
+        enum ConditionCode
+        {
+            CC_O, CC_NO, CC_B, CC_AE, CC_E, CC_NE, CC_BE, CC_A, CC_S, CC_NS, CC_P, CC_NP, CC_L, CC_GE, CC_LE, CC_G,
+        };
+
         enum LoopCondition
         {
             LOOP_NE, LOOP_E, LOOP_NC,
@@ -2559,12 +2487,18 @@ namespace jitasm
             E_ENCODED = 1 << 31,
 
             // Aliases
-            E_VEX_128_0F_WIG = E_VEX_128 | E_VEX_0F | E_VEX_WIG,
-            E_VEX_256_0F_WIG = E_VEX_256 | E_VEX_0F | E_VEX_WIG,
-            E_VEX_128_66_0F_WIG = E_VEX_128 | E_VEX_66_0F | E_VEX_WIG,
-            E_VEX_256_66_0F_WIG = E_VEX_256 | E_VEX_66_0F | E_VEX_WIG,
-            E_VEX_128_66_0F38_WIG = E_VEX_128 | E_VEX_66_0F38 | E_VEX_WIG,
-            E_VEX_256_66_0F38_WIG = E_VEX_256 | E_VEX_66_0F38 | E_VEX_WIG,
+            E_VEX_128_0F = E_VEX_128 | E_VEX_0F,
+            E_VEX_256_0F = E_VEX_256 | E_VEX_0F,
+            E_VEX_128_66_0F = E_VEX_128 | E_VEX_66_0F,
+            E_VEX_256_66_0F = E_VEX_256 | E_VEX_66_0F,
+            E_VEX_128_66_0F38 = E_VEX_128 | E_VEX_66_0F38,
+            E_VEX_256_66_0F38 = E_VEX_256 | E_VEX_66_0F38,
+            E_VEX_128_0F_WIG = E_VEX_128_0F | E_VEX_WIG,
+            E_VEX_256_0F_WIG = E_VEX_256_0F | E_VEX_WIG,
+            E_VEX_128_66_0F_WIG = E_VEX_128_66_0F | E_VEX_WIG,
+            E_VEX_256_66_0F_WIG = E_VEX_256_66_0F | E_VEX_WIG,
+            E_VEX_128_66_0F38_WIG = E_VEX_128_66_0F38 | E_VEX_WIG,
+            E_VEX_256_66_0F38_WIG = E_VEX_256_66_0F38 | E_VEX_WIG,
             E_VEX_128_66_0F38_W0 = E_VEX_128 | E_VEX_66_0F38 | E_VEX_W0,
             E_VEX_256_66_0F38_W0 = E_VEX_256 | E_VEX_66_0F38 | E_VEX_W0,
             E_VEX_128_66_0F38_W1 = E_VEX_128 | E_VEX_66_0F38 | E_VEX_W1,
@@ -2605,7 +2539,7 @@ namespace jitasm
                 detail::Opd const & opd4 = detail::Opd(),
                 detail::Opd const & opd5 = detail::Opd(),
                 detail::Opd const & opd6 = detail::Opd())
-                : id_(id), opcode_(opcode), encoding_flags_(encoding_flag | E_ENCODED)
+                : id_(id), opcode_(opcode), encoding_flags_(encoding_flag)
             {
                 opd_[0] = opd1, opd_[1] = opd2, opd_[2] = opd3, opd_[3] = opd4, opd_[4] = opd5, opd_[5] = opd6;
             }
@@ -2628,7 +2562,7 @@ namespace jitasm
         {
             struct True
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t /*index*/)
                 {
                     return true;
                 }
@@ -2636,7 +2570,7 @@ namespace jitasm
 
             struct False
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t /*index*/)
                 {
                     return false;
                 }
@@ -2645,11 +2579,11 @@ namespace jitasm
             template< typename Operand, typename ...Rest >
             struct Match
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
-                    if (Operand::Matches(instr))
+                    if (Operand::Matches(instr, index))
                     {
-                        return Match< Rest... >::Matches(instr);
+                        return Match< Rest... >::Matches(instr, index + 1);
                     }
 
                     return false;
@@ -2659,9 +2593,9 @@ namespace jitasm
             template< typename Operand >
             struct Match < Operand >
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
-                    return Operand::Matches(instr);
+                    return Operand::Matches(instr, index);
                 }
             };
 
@@ -2670,8 +2604,11 @@ namespace jitasm
             {
                 static bool Encode(Instr & instr)
                 {
-                    if (Operand::Matches(instr))
+                    if (Operand::Matches(instr, 0))
                     {
+                        instr.opcode_ |= opcode;
+                        instr.encoding_flags_ |= E_ENCODED;
+
                         Encode$< id, opcode, Operand, Rest... >::Encode(instr);
 
                         return true;
@@ -2686,8 +2623,11 @@ namespace jitasm
             {
                 static bool Encode(Instr & instr)
                 {
-                    if (Operand::Matches(instr))
+                    if (Operand::Matches(instr, 0))
                     {
+                        instr.opcode_ |= opcode;
+                        instr.encoding_flags_ |= E_ENCODED;
+
                         Encode$< id, opcode, Operand >::Encode(instr);
 
                         return true;
@@ -2733,10 +2673,10 @@ namespace jitasm
             // A
 
             // B
-            template< size_t index, Access access >
-            struct By
+            template< Access access >
+            struct _By_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
@@ -2759,10 +2699,10 @@ namespace jitasm
             // D
 
             // E
-            template< size_t index, Access access >
-            struct Eb
+            template< Access access >
+            struct _Eb_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg() || opd.IsMem())
@@ -2773,10 +2713,10 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index, Access access >
-            struct Ew
+            template< Access access >
+            struct _Ew_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg() || opd.IsMem())
@@ -2787,10 +2727,38 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index, Access access >
-            struct Ev
+            template< Access access >
+            struct _Ed_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg() || opd.IsMem())
+                    {
+                        return O_SIZE_32 == opd.GetSize();
+                    }
+
+                    return false;
+                }
+            };
+            template< Access access >
+            struct _Eq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg() || opd.IsMem())
+                    {
+                        return O_SIZE_64 == opd.GetSize();
+                    }
+
+                    return false;
+                }
+            };
+            template< Access access >
+            struct _Ev_
+            {
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg() || opd.IsMem())
@@ -2798,9 +2766,7 @@ namespace jitasm
                         switch (opd.GetSize())
                         {
                         case O_SIZE_16:
-                            return true;
                         case O_SIZE_32:
-                            return true;
                         case O_SIZE_64:
                             return true;
                         }
@@ -2809,10 +2775,10 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index, Access access >
-            struct Ey
+            template< Access access >
+            struct _Ey_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg() || opd.IsMem())
@@ -2820,7 +2786,6 @@ namespace jitasm
                         switch (opd.GetSize())
                         {
                         case O_SIZE_32:
-                            return true;
                         case O_SIZE_64:
                             return true;
                         }
@@ -2833,10 +2798,10 @@ namespace jitasm
             // F
 
             // G
-            template< size_t index, Access access >
-            struct Gb
+            template< Access access >
+            struct _Gb_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
@@ -2847,10 +2812,10 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index, Access access >
-            struct Gw
+            template< Access access >
+            struct _Gw_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
@@ -2861,10 +2826,38 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index, Access access >
-            struct Gv
+            template< Access access >
+            struct _Gd_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        return O_SIZE_32 == opd.GetSize();
+                    }
+
+                    return false;
+                }
+            };
+            template< Access access >
+            struct _Gq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        return O_SIZE_64 == opd.GetSize();
+                    }
+
+                    return false;
+                }
+            };
+            template< Access access >
+            struct _Gv_
+            {
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
@@ -2872,9 +2865,7 @@ namespace jitasm
                         switch (opd.GetSize())
                         {
                         case O_SIZE_16:
-                            return true;
                         case O_SIZE_32:
-                            return true;
                         case O_SIZE_64:
                             return true;
                         }
@@ -2883,10 +2874,10 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index, Access access >
-            struct Gy
+            template< Access access >
+            struct _Gy_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
@@ -2894,7 +2885,6 @@ namespace jitasm
                         switch (opd.GetSize())
                         {
                         case O_SIZE_32:
-                            return true;
                         case O_SIZE_64:
                             return true;
                         }
@@ -2907,10 +2897,9 @@ namespace jitasm
             // H
 
             // I
-            template< size_t index >
-            struct Ib
+            struct _Ib_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsImm())
@@ -2921,10 +2910,9 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index >
-            struct Iw
+            struct _Iw_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsImm())
@@ -2935,10 +2923,9 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index >
-            struct Id
+            struct _Id_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsImm())
@@ -2949,12 +2936,11 @@ namespace jitasm
                     return false;
                 }
             };
-            template< size_t index, size_t size_index = 0 >
-            struct Iz
+            struct _Iz_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
-                    auto & opd0 = instr.GetOpd(size_index);
+                    auto & opd0 = instr.GetOpd(0);
                     auto & opd1 = instr.GetOpd(index);
                     if (opd1.IsImm())
                     {
@@ -2973,23 +2959,94 @@ namespace jitasm
             };
 
             // J
+            struct _Jb_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsImm())
+                    {
+                        return detail::IsInt8(opd.GetImm());
+                    }
+
+                    return false;
+                }
+            };
+            struct _Jz_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd0 = instr.GetOpd(0);
+                    auto & opd1 = instr.GetOpd(index);
+                    if (opd1.IsImm())
+                    {
+                        switch (opd0.GetSize())
+                        {
+                        case O_SIZE_16:
+                            return detail::IsInt16(opd1.GetImm());
+                        case O_SIZE_32:
+                        case O_SIZE_64:
+                            return detail::IsInt32(opd1.GetImm());
+                        }
+                    }
+
+                    return false;
+                }
+            };
+
 
             // L
 
             // M
-            template< size_t index, Access access >
-            struct Ma
+            template< Access access >
+            struct _Mb_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    return opd.IsMem() && O_SIZE_8 == opd.GetSize();
+                }
+            };
+            template< Access access >
+            struct _Mw_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    return opd.IsMem() && O_SIZE_16 == opd.GetSize();
+                }
+            };
+            template< Access access >
+            struct _Md_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    return opd.IsMem() && O_SIZE_32 == opd.GetSize();
+                }
+            };
+            template< Access access >
+            struct _Mq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    return opd.IsMem() && O_SIZE_64 == opd.GetSize();
+                }
+            };
+            template< Access access >
+            struct _Ma_
+            {
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsMem())
                     {
                         switch (opd.GetSize())
                         {
-                        case O_SIZE_16:
-                            return true;
                         case O_SIZE_32:
+                            return true;
+                        case O_SIZE_64:
                             return true;
                         }
                     }
@@ -3023,13 +3080,37 @@ namespace jitasm
 
             // Y
 
+            // Z
+            template< Access access >
+            struct _Zv_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        switch (opd.GetSize())
+                        {
+                        case O_SIZE_16:
+                            return true;
+                        case O_SIZE_32:
+                            return true;
+                        case O_SIZE_64:
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            };
+
             /////////////////////
             // SPECIAL DYMMY KEYS
 
-            template< PhysicalRegID id, size_t index, Access access = !index ? RW : R >
-            struct rb
+            template< PhysicalRegID id, Access access >
+            struct _rb_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     if (index < 0) // dummy register
                     {
@@ -3045,10 +3126,56 @@ namespace jitasm
                 }
             };
 
-            template< PhysicalRegID id, size_t index, Access access = !index ? RW : R >
-            struct rv
+            template< PhysicalRegID id, Access access >
+            struct _rw_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        return id == opd.GetReg().id && O_SIZE_16 == opd.GetSize();
+                    }
+
+                    return false;
+                }
+            };
+
+            template< PhysicalRegID id, Access access >
+            struct _rd_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        return id == opd.GetReg().id && O_SIZE_32 == opd.GetSize();
+                    }
+
+                    return false;
+                }
+            };
+
+            template< PhysicalRegID id, Access access >
+            struct _rq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        return id == opd.GetReg().id && O_SIZE_64 == opd.GetSize();
+                    }
+
+                    return false;
+                }
+            };
+
+
+            template< PhysicalRegID id, Access access >
+            struct _rv_
+            {
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
@@ -3060,10 +3187,10 @@ namespace jitasm
                 }
             };
 
-            template< PhysicalRegID id, size_t index, Access access = !index ? RW : R >
-            struct ry
+            template< PhysicalRegID id, Access access >
+            struct _ry_
             {
-                static bool Matches(Instr & instr)
+                static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg() && id == opd.GetReg().id)
@@ -3077,6 +3204,15 @@ namespace jitasm
                     }
 
                     return false;
+                }
+            };
+
+            struct None
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    return opd.IsNone();
                 }
             };
 
@@ -3157,38 +3293,61 @@ namespace jitasm
             };
 
             /////////////
-            
+
             template< size_t flags >
             struct EncodingFlags
             {
             };
 
+            struct OSb; // Operand Size prefix : byte (8-bit)
+            struct OSw; // Operand Size prefix : word (16-bit)
+            struct OSq; // Operand Size prefix : qword (64-bit)
+            struct OSv; // Operand Size prefix : word (16-bit), dword (32-bit) or qword (64-bit)
+            struct OSy; // Operand Size prefix : dword (32-bit) or qword (64-bit)
+            struct OSz; // Operand Size prefix : word (16-bit) or dword (32-bit)
+
+            struct OAw; // Address Size prefix : word (16-bit)
+            struct OAd; // Address Size prefix : dword (32-bit)
+            struct OAv; // Address Size prefix : dword (32-bit) or qword (64-bit)
+
             /////////////
 
-            template< Access a0, Access a1 > using Eb_Gb = Match < Eb < 0, a0 >, Gb < 1, a1 > > ;
-            template< Access a0, Access a1 > using Ew_Gw = Match < Ew < 0, a0 >, Gw < 1, a1 > > ;
-            template< Access a0, Access a1 > using Ev_Gv = Match < Ev < 0, a0 >, Gv < 1, a1 > > ;
-            template< Access a0, Access a1 > using Gv_Ma = Match < Gv < 0, a0 >, Ma < 1, a1 > > ;
-            template< Access a0, Access a1 > using Gb_Eb = Match < Gb < 0, a0 >, Eb < 1, a1 > > ;
-            template< Access a0, Access a1 > using Gv_Ev = Match < Gv < 0, a0 >, Ev < 1, a1 > > ;
-            template< Access a0, Access a1 > using Gy_Ey = Match < Gy < 0, a0 >, Ey < 1, a1 > > ;
+            /**/                  using Jb = Match < _Jb_       , None > ;
+            template< Access a0 > using Mb = Match < _Mb_ < a0 >, None > ;
+
+            template< Access a0 > using Ev = Match < _Ev_ < a0 >, None > ;
+            template< Access a0 > using Zv = Match < _Zv_ < a0 >, None > ;
+            /**/                  using Jz = Match < _Jz_       , None > ;
+
+            template< Access a0, Access a1 > using Eb_Gb = Match < _Eb_ < a0 >, _Gb_ < a1 >, None >;
+            template< Access a0, Access a1 > using Ew_Gw = Match < _Ew_ < a0 >, _Gw_ < a1 >, None >;
+            template< Access a0, Access a1 > using Ev_Gv = Match < _Ev_ < a0 >, _Gv_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gv_Ma = Match < _Gv_ < a0 >, _Ma_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gb_Eb = Match < _Gb_ < a0 >, _Eb_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gv_Ev = Match < _Gv_ < a0 >, _Ev_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gy_Ey = Match < _Gy_ < a0 >, _Ey_ < a1 >, None >;
             
-            template< Access a0, Access a1 > using Gy_Ey_Ib = Match < Gy < 0, a0 >, Ey < 1, a1 >, Ib< 2 > > ;
+            template< Access a0, Access a1 > using Gy_Ey_Ib = Match < _Gy_ < a0 >, _Ey_ < a1 >, _Ib_, None >;
 
-            template< Access a0 > using Eb_Ib = Match < Eb < 0, a0 >, Ib < 1 > > ;
-            template< Access a0 > using Ev_Ib = Match < Ev < 0, a0 >, Ib < 1 > > ;
-            template< Access a0 > using Ev_Iz = Match < Ev < 0, a0 >, Iz < 1 > > ;
+            template< Access a0 > using Eb_Ib = Match < _Eb_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Ev_Ib = Match < _Ev_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Ev_Iz = Match < _Ev_ < a0 >, _Iz_, None >;
 
-            template< Access a0 > using AL_Ib = Match < rb < AL, 0, a0 >, Ib < 1 > > ;
-            template< Access a0 > using rAX_Iz = Match < rv < AX, 0, a0 >, Iz < 1 > > ;
+            template< Access a0, Access a1, Access a2 > using Eb_AL_Gb = Match < _Eb_ < a0 >, _rb_ < RAX, a1 >, _Gb_ < a2 >, None >;
+            template< Access a0, Access a1, Access a2 > using Ev_rAX_Gv = Match < _Ev_ < a0 >, _rv_ < RAX, a1 >, _Gv_ < a2 >, None >;
 
-            template< Access a0, Access a1 > using Implicit_AL_AH = Match < Implicit< rv < AL, -1, a0 >, rv < AH, -1, a1 > > > ;
-            template< Access a0, Access a1 > using Ib_Implicit_AL_AH = Match < Ib < 0 >, Implicit< rv < AL, -1, a0 >, rv < AH, -1, a1 > > > ;
+            template< Access a0 > using AL_Ib = Match < _rb_ < AL, a0 >, _Ib_, None >;
+            template< Access a0 > using rAX_Iz = Match < _rv_ < AX, a0 >, _Iz_, None >;
 
-            template< Access a0, Access a1, Access a2, Access a3 > using By_Gy_rDX_Ey = Match < By < 0, a0 >, Gy < 1, a1 >, ry < RDX, 2, a2 >, Ey < 3, a3 > >;
-            template< Access a0, Access a1, Access a2            > using Gy_By_Ey     = Match < Gy < 0, a0 >, By < 1, a1 >, Ey < 2, a2 > >;
-            template< Access a0, Access a1, Access a2            > using Gy_Ey_By     = Match < Gy < 0, a0 >, Ey < 1, a1 >, By < 2, a2 > >;
-            template< Access a0, Access a1                       > using By_Ey        = Match < By < 0, a0 >, Ey < 1, a1 > >;
+            template< Access a0 > using Implicit_rAX = Match < Implicit< _rv_ < RAX, a0 > >, None >;
+            template< Access a0 > using Ib_Implicit_rAX = Match < _Ib_, Implicit< _rv_ < RAX, a0 > >, None >;
+
+            template< Access a0, Access a1 > using Implicit_rDI_rSI = Match < Implicit< _rv_ < RDI, a0 >, _rv_ < RSI, a1 > >, None >;
+            
+            template< Access a0, Access a1, Access a2, Access a3 > using By_Gy_rDX_Ey = Match < _By_ < a0 >, _Gy_ < a1 >, _ry_ < RDX, a2 >, _Ey_ < a3 >, None >;
+            template< Access a0, Access a1, Access a2            > using Gy_By_Ey = Match < _Gy_ < a0 >, _By_ < a1 >, _Ey_ < a2 >, None >;
+            template< Access a0, Access a1, Access a2            > using Gy_Ey_By = Match < _Gy_ < a0 >, _Ey_ < a1 >, _By_ < a2 >, None >;
+            template< Access a0, Access a1                       > using By_Ey = Match < _By_ < a0 >, _Ey_ < a1 >, None >;
 
             /////////////
 

@@ -240,45 +240,45 @@ namespace jitasm
             {
                 uint32 opcode = instr.opcode_;
 
-                auto const & opd1 = instr.GetOpd(0).IsDummy() ? detail::Opd() : instr.GetOpd(0);
-                auto const & opd2 = instr.GetOpd(1).IsDummy() ? detail::Opd() : instr.GetOpd(1);
-                auto const & opd3 = instr.GetOpd(2).IsDummy() ? detail::Opd() : instr.GetOpd(2);
-                auto const & opd4 = instr.GetOpd(3).IsDummy() ? detail::Opd() : instr.GetOpd(3);
+                auto const & opd0 = instr.GetOpd(0).IsDummy() ? detail::Opd() : instr.GetOpd(0);
+                auto const & opd1 = instr.GetOpd(1).IsDummy() ? detail::Opd() : instr.GetOpd(1);
+                auto const & opd2 = instr.GetOpd(2).IsDummy() ? detail::Opd() : instr.GetOpd(2);
+                auto const & opd3 = instr.GetOpd(3).IsDummy() ? detail::Opd() : instr.GetOpd(3);
 
                 // +rb, +rw, +rd, +ro
-                if (opd1.IsReg() && (opd2.IsNone() || opd2.IsImm()))
+                if (opd0.IsReg() && (opd1.IsNone() || opd1.IsImm()))
                 {
-                    opcode += opd1.GetReg().id & 0x7;
+                    opcode += opd0.GetReg().id & 0x7;
                 }
 
-                if ((opd1.IsImm() || opd1.IsReg()) && (opd2.IsReg() || opd2.IsMem()))
+                if ((opd0.IsImm() || opd0.IsReg()) && (opd1.IsReg() || opd1.IsMem()))
                 {	// ModR/M
-                    auto const & reg = opd1;
-                    auto const & r_m = opd2;
-                    auto const & vex = opd3;
+                    auto const & reg = opd0;
+                    auto const & r_m = opd1;
+                    auto const & vex = opd2;
                     EncodePrefixes(instr.encoding_flags_, reg, r_m, vex);
                     EncodeOpcode(opcode);
                     EncodeModRM((uint8)(reg.IsImm() ? reg.GetImm() : reg.GetReg().id), r_m);
 
                     // /is4
-                    if (opd4.IsReg())
+                    if (opd3.IsReg())
                     {
-                        EncodeImm(Imm8(static_cast<uint8>(opd4.GetReg().id << 4)));
+                        EncodeImm(Imm8(static_cast<uint8>(opd3.GetReg().id << 4)));
                     }
                 }
                 else
                 {
                     auto const & reg = detail::Opd();
-                    auto const & r_m = opd1.IsReg() ? opd1 : detail::Opd();
+                    auto const & r_m = opd0.IsReg() ? opd0 : detail::Opd();
                     auto const & vex = detail::Opd();
                     EncodePrefixes(instr.encoding_flags_, reg, r_m, vex);
                     EncodeOpcode(opcode);
                 }
 
-                if (opd1.IsImm() && !opd2.IsReg() && !opd2.IsMem())	EncodeImm(opd1);
+                if (opd0.IsImm() && !opd1.IsReg() && !opd1.IsMem())	EncodeImm(opd0);
+                if (opd1.IsImm())	EncodeImm(opd1);
                 if (opd2.IsImm())	EncodeImm(opd2);
                 if (opd3.IsImm())	EncodeImm(opd3);
-                if (opd4.IsImm())	EncodeImm(opd4);
             }
 
             void EncodeInstr(Instr & instr);
@@ -292,10 +292,10 @@ namespace jitasm
                 case I_ALIGN:   EncodeMultiNop(instr.GetOpd(0)); break;
                 case I_NULL:                                     break;
                 case I_SOURCE:  EncodeSource(instr.GetOpd(0));   break;
-                case I_DB:      EncodeImm(instr.GetOpd(0));      break;
-                case I_DW:      EncodeImm(instr.GetOpd(0));      break;
-                case I_DD:      EncodeImm(instr.GetOpd(0));      break;
-                case I_DQ:      EncodeImm(instr.GetOpd(0));      break;
+                case I_DB:      db(instr.GetOpd(0).GetImm());    break;
+                case I_DW:      dw(instr.GetOpd(0).GetImm());    break;
+                case I_DD:      dd(instr.GetOpd(0).GetImm());    break;
+                case I_DQ:      dq(instr.GetOpd(0).GetImm());    break;
                 default:		Encode(instr);                   break;
                 }
             }
