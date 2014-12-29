@@ -48,7 +48,7 @@ namespace jitasm
             bool result = true;
             if (buffaddr_)
             {
-                result = result || derived().FreeBuffer();
+                result = derived().FreeBuffer();
                 if (result)
                 {
                     buffaddr_ = nullptr;
@@ -58,7 +58,7 @@ namespace jitasm
             }
             if (result && codesize)
             {
-                result = result && derived().AllocateBuffer(codesize);
+                result = derived().AllocateBuffer(codesize);
                 if (result)
                 {
                     codesize_ = codesize;
