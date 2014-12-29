@@ -13,7 +13,7 @@ namespace jitasm
 
         enum PhysicalRegID
         {
-            INVALID = 0x0FFFFFFF,
+            INVALID = 0x03FFFFFF,
             EAX = 0, ECX, EDX, EBX, ESP, EBP, ESI, EDI, R8D, R9D, R10D, R11D, R12D, R13D, R14D, R15D,
             AL = 0, CL, DL, BL, AH, CH, DH, BH, R8B, R9B, R10B, R11B, R12B, R13B, R14B, R15B,
             AX = 0, CX, DX, BX, SP, BP, SI, DI, R8W, R9W, R10W, R11W, R12W, R13W, R14W, R15W,
