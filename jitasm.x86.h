@@ -1173,14 +1173,12 @@ namespace jitasm
             I_FIADD,
             I_FADDP,
             I_ADOX,
-            I_ADX,
             I_AESDECLAST,
             I_AESDEC,
             I_AESENCLAST,
             I_AESENC,
             I_AESIMC,
             I_AESKEYGENASSIST,
-            I_AMX,
             I_AND,
             I_ANDN,
             I_ANDNPD,
@@ -1228,10 +1226,7 @@ namespace jitasm
             I_CMOVcc,
             I_FCMOVcc,
             I_CMP,
-            I_CMPS_B,
-            I_CMPS_D,
-            I_CMPS_Q,
-            I_CMPS_W,
+            I_CMPS,
             I_CMPPD,
             I_CMPPS,
             I_CMPSD,
@@ -1446,10 +1441,7 @@ namespace jitasm
             I_LOCK,
             I_SUB,
             I_XOR,
-            I_LODSB,
-            I_LODSD,
-            I_LODSQ,
-            I_LODSW,
+            I_LODS,
             I_LOOPCC,
             I_RETF,
             I_RETFQ,
@@ -1579,13 +1571,10 @@ namespace jitasm
             I_MOVNTPS,
             I_MOVNTSD,
             I_MOVNTSS,
-            I_MOVSB,
-            I_MOVSD,
+            I_MOVS,
             I_MOVSHDUP,
             I_MOVSLDUP,
-            I_MOVSQ,
             I_MOVSS,
-            I_MOVSW,
             I_MOVSX,
             I_MOVSXD,
             I_MOVUPD,
@@ -1732,10 +1721,7 @@ namespace jitasm
             I_SAR,
             I_SARX,
             I_SBB,
-            I_SCASB,
-            I_SCASD,
-            I_SCASQ,
-            I_SCASW,
+            I_SCAS,
             I_SETcc,
             I_SFENCE,
             I_SGDT,
@@ -1770,10 +1756,7 @@ namespace jitasm
             I_STGI,
             I_STI,
             I_STMXCSR,
-            I_STOSB,
-            I_STOSD,
-            I_STOSQ,
-            I_STOSW,
+            I_STOS,
             I_STR,
             I_FST,
             I_FSTP,
@@ -2399,6 +2382,8 @@ namespace jitasm
             I_XSTORE,
             I_XTEST,
 
+            I_LAST_INSTRUCTION,
+
             // jitasm compiler instructions
             I_COMPILER_DECLARE_REG_ARG,		///< Declare register argument
             I_COMPILER_DECLARE_STACK_ARG,	///< Declare stack argument
@@ -2556,6 +2541,20 @@ namespace jitasm
             {
                 return opd_[index];
             }
+
+            friend bool operator== (Instr const & lhs, Instr const & lhr)
+            {
+                return
+                    lhs.id_ == lhr.id_ &&
+                    lhs.opcode_ == lhr.opcode_ &&
+                    lhs.encoding_flags_ == lhr.encoding_flags_ &&
+                    lhs.opd_[0] == lhr.opd_[0] &&
+                    lhs.opd_[1] == lhr.opd_[1] &&
+                    lhs.opd_[2] == lhr.opd_[2] &&
+                    lhs.opd_[3] == lhr.opd_[3] &&
+                    lhs.opd_[4] == lhr.opd_[4] &&
+                    lhs.opd_[5] == lhr.opd_[5];
+            }
         };
 
         namespace encoder
@@ -2599,68 +2598,110 @@ namespace jitasm
                 }
             };
 
-            template< size_t id, size_t opcode, typename Operand, typename ...Rest >
+            template< InstrID id, size_t opcode, typename Operand, typename ...Rest >
             struct Opcode
             {
-                static bool Encode(Instr & instr)
+                static bool Encode(Instr & instr, bool is64)
                 {
                     if (Operand::Matches(instr, 0))
                     {
                         instr.opcode_ |= opcode;
                         instr.encoding_flags_ |= E_ENCODED;
 
-                        Encode$< id, opcode, Operand, Rest... >::Encode(instr);
-
-                        return true;
+                        return Encode$< id, opcode, Operand, Rest... >::Encode(instr, is64);
                     }
 
                     return false;
                 }
+#ifdef JITASM_TEST
+                static void Test(std::vector< Instr > & list, bool is64)
+                {
+                    Encode$< id, opcode, Operand, Rest... >::Test(list, is64);
+                }
+#endif
             };
 
-            template< size_t id, size_t opcode, typename Operand >
+            template< InstrID id, size_t opcode, typename Operand >
             struct Opcode< id, opcode, Operand >
             {
-                static bool Encode(Instr & instr)
+                static bool Encode(Instr & instr, bool is64)
                 {
                     if (Operand::Matches(instr, 0))
                     {
                         instr.opcode_ |= opcode;
                         instr.encoding_flags_ |= E_ENCODED;
 
-                        Encode$< id, opcode, Operand >::Encode(instr);
+                        Encode$< id, opcode, Operand >::Encode(instr, is64);
 
                         return true;
                     }
 
                     return false;
                 }
+#ifdef JITASM_TEST
+                static void Test(std::vector< Instr > & list, bool is64)
+                {
+                    Encode$< id, opcode, Operand >::Test(list, is64);
+                }
+#endif
             };
 
             template< typename Opcode, typename ...Rest >
             struct Switch
             {
-                static bool Encode(Instr & instr)
+                static bool Encode(Instr & instr, bool is64)
                 {
-                    if (Opcode::Encode(instr))
+                    if (Opcode::Encode(instr, is64))
                     {
                         return true;
                     }
 
-                    return Switch< Rest... >::Encode(instr);
+                    return Switch< Rest... >::Encode(instr, is64);
                 }
+#ifdef JITASM_TEST
+                static void Test(std::vector< Instr > & list, bool is64)
+                {
+                    Switch< Opcode >::Test(list, is64);
+                    Switch< Rest... >::Test(list, is64);
+                    std::vector< Instr > unique_list;
+                    auto i = list.begin();
+                    while (i != list.end())
+                    {
+                        auto & instr = *i;
+                        bool unique = true;
+                        for (auto & unique_instr : unique_list)
+                        {
+                            if (unique_instr == instr)
+                            {
+                                unique = false;
+                                break;
+                            }
+                        }
+                        if (unique)
+                        {
+                            unique_list.push_back(instr);
+                        }
+                        ++i;
+                    }
+                    list.swap(unique_list);
+                }
+#endif
             };
 
             template< typename Opcode >
             struct Switch < Opcode >
             {
-                static bool Encode(Instr & instr)
+                static bool Encode(Instr & instr, bool is64)
                 {
-                    return Opcode::Encode(instr);
+                    return Opcode::Encode(instr, is64);
                 }
+#ifdef JITASM_TEST
+                static void Test(std::vector< Instr > & list, bool is64)
+                {
+                    Opcode::Test(list, is64);
+                }
+#endif
             };
-
-            template< typename ...Operands > struct Implicit : True {};
 
             ///////////////////////
             // KEY TO ABBREVIATIONS
@@ -2972,7 +3013,7 @@ namespace jitasm
                     return false;
                 }
             };
-            struct _Jz_
+            struct _Jw_
             {
                 static bool Matches(Instr & instr, size_t index)
                 {
@@ -2984,6 +3025,22 @@ namespace jitasm
                         {
                         case O_SIZE_16:
                             return detail::IsInt16(opd1.GetImm());
+                        }
+                    }
+
+                    return false;
+                }
+            };
+            struct _Jd_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd0 = instr.GetOpd(0);
+                    auto & opd1 = instr.GetOpd(index);
+                    if (opd1.IsImm())
+                    {
+                        switch (opd0.GetSize())
+                        {
                         case O_SIZE_32:
                         case O_SIZE_64:
                             return detail::IsInt32(opd1.GetImm());
@@ -3207,6 +3264,9 @@ namespace jitasm
                 }
             };
 
+
+            /////////////
+
             struct None
             {
                 static bool Matches(Instr & instr, size_t index)
@@ -3301,49 +3361,83 @@ namespace jitasm
 
             struct OSb; // Operand Size prefix : byte (8-bit)
             struct OSw; // Operand Size prefix : word (16-bit)
+            struct OSd; // Operand Size prefix : dword (32-bit)
             struct OSq; // Operand Size prefix : qword (64-bit)
-            struct OSv; // Operand Size prefix : word (16-bit), dword (32-bit) or qword (64-bit)
-            struct OSy; // Operand Size prefix : dword (32-bit) or qword (64-bit)
-            struct OSz; // Operand Size prefix : word (16-bit) or dword (32-bit)
 
-            struct OAw; // Address Size prefix : word (16-bit)
-            struct OAd; // Address Size prefix : dword (32-bit)
-            struct OAv; // Address Size prefix : dword (32-bit) or qword (64-bit)
+            struct ASw; // Address Size prefix : word (16-bit)
+            struct ASd; // Address Size prefix : dword (32-bit)
+            struct ASq; // Address Size prefix : qword (64-bit)
+
+            struct i64; // Invalid in 64-bit mode
+            struct o64; // Only in 64-bit mode
+
+            template< size_t index, PhysicalRegID regid > struct DummyReg
+            {
+            };
 
             /////////////
 
-            /**/                  using Jb = Match < _Jb_       , None > ;
-            template< Access a0 > using Mb = Match < _Mb_ < a0 >, None > ;
+            template< Access a0 > using Eb = Match < _Eb_ < a0 >, None > ;
+            template< Access a0 > using Ew = Match < _Ew_ < a0 >, None >;
+            template< Access a0 > using Ed = Match < _Ed_ < a0 >, None >;
+            template< Access a0 > using Eq = Match < _Eq_ < a0 >, None >;
+            template< Access a0 > using Ev = Match < _Ev_ < a0 >, None >;
 
-            template< Access a0 > using Ev = Match < _Ev_ < a0 >, None > ;
-            template< Access a0 > using Zv = Match < _Zv_ < a0 >, None > ;
-            /**/                  using Jz = Match < _Jz_       , None > ;
+            template< Access a0 > using Gb = Match < _Gb_ < a0 >, None > ;
+            template< Access a0 > using Gw = Match < _Gw_ < a0 >, None >;
+            template< Access a0 > using Gd = Match < _Gd_ < a0 >, None >;
+            template< Access a0 > using Gq = Match < _Gq_ < a0 >, None >;
+            template< Access a0 > using Gv = Match < _Gv_ < a0 >, None >;
+
+            /**/                  using Jb = Match < _Jb_, None >;
+            /**/                  using Jw = Match < _Jw_, None > ;
+            /**/                  using Jd = Match < _Jd_, None > ;
+
+            template< Access a0 > using Mb = Match < _Mb_ < a0 >, None >;
+            template< Access a0 > using Mw = Match < _Mw_ < a0 >, None >;
+            template< Access a0 > using Md = Match < _Md_ < a0 >, None >;
+            template< Access a0 > using Mq = Match < _Mq_ < a0 >, None >;
+
+            template< Access a0 > using Zv = Match < _Zv_ < a0 >, None >;
+
 
             template< Access a0, Access a1 > using Eb_Gb = Match < _Eb_ < a0 >, _Gb_ < a1 >, None >;
             template< Access a0, Access a1 > using Ew_Gw = Match < _Ew_ < a0 >, _Gw_ < a1 >, None >;
-            template< Access a0, Access a1 > using Ev_Gv = Match < _Ev_ < a0 >, _Gv_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gv_Ma = Match < _Gv_ < a0 >, _Ma_ < a1 >, None >;
+            template< Access a0, Access a1 > using Ed_Gd = Match < _Ed_ < a0 >, _Gd_ < a1 >, None >;
+            template< Access a0, Access a1 > using Eq_Gq = Match < _Eq_ < a0 >, _Gq_ < a1 >, None >;
             template< Access a0, Access a1 > using Gb_Eb = Match < _Gb_ < a0 >, _Eb_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gv_Ev = Match < _Gv_ < a0 >, _Ev_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gy_Ey = Match < _Gy_ < a0 >, _Ey_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gw_Ew = Match < _Gw_ < a0 >, _Ew_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gd_Ed = Match < _Gd_ < a0 >, _Ed_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gq_Eq = Match < _Gq_ < a0 >, _Eq_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gw_Gw = Match < _Gw_ < a0 >, _Gw_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gd_Gd = Match < _Gd_ < a0 >, _Gd_ < a1 >, None >;
+            template< Access a0, Access a1 > using Gq_Gq = Match < _Gq_ < a0 >, _Gq_ < a1 >, None >;
             
+            template< Access a0, Access a1 > using Gw_Md = Match < _Gw_ < a0 >, _Md_ < a1 >, None > ;
+            template< Access a0, Access a1 > using Gd_Mq = Match < _Gd_ < a0 >, _Mq_ < a1 >, None > ;
+
             template< Access a0, Access a1 > using Gy_Ey_Ib = Match < _Gy_ < a0 >, _Ey_ < a1 >, _Ib_, None >;
 
             template< Access a0 > using Eb_Ib = Match < _Eb_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Ev_Ib = Match < _Ev_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Ev_Iz = Match < _Ev_ < a0 >, _Iz_, None >;
+            template< Access a0 > using Ew_Ib = Match < _Ew_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Ed_Ib = Match < _Ed_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Eq_Ib = Match < _Eq_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Ew_Iw = Match < _Ew_ < a0 >, _Iw_, None >;
+            template< Access a0 > using Ed_Id = Match < _Ed_ < a0 >, _Id_, None >;
+            template< Access a0 > using Eq_Id = Match < _Eq_ < a0 >, _Id_, None >;
+            template< Access a0 > using Gb_Ib = Match < _Gb_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Gw_Ib = Match < _Gw_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Gd_Ib = Match < _Gd_ < a0 >, _Ib_, None >;
+            template< Access a0 > using Gq_Ib = Match < _Gq_ < a0 >, _Ib_, None >;
 
             template< Access a0, Access a1, Access a2 > using Eb_AL_Gb = Match < _Eb_ < a0 >, _rb_ < RAX, a1 >, _Gb_ < a2 >, None >;
             template< Access a0, Access a1, Access a2 > using Ev_rAX_Gv = Match < _Ev_ < a0 >, _rv_ < RAX, a1 >, _Gv_ < a2 >, None >;
 
             template< Access a0 > using AL_Ib = Match < _rb_ < AL, a0 >, _Ib_, None >;
-            template< Access a0 > using rAX_Iz = Match < _rv_ < AX, a0 >, _Iz_, None >;
+            template< Access a0 > using AX_Iw = Match < _rw_ < AX, a0 >, _Iw_, None >;
+            template< Access a0 > using EAX_Id = Match < _rd_ < EAX, a0 >, _Id_, None >;
+            template< Access a0 > using RAX_Id = Match < _rq_ < RAX, a0 >, _Id_, None >;
 
-            template< Access a0 > using Implicit_rAX = Match < Implicit< _rv_ < RAX, a0 > >, None >;
-            template< Access a0 > using Ib_Implicit_rAX = Match < _Ib_, Implicit< _rv_ < RAX, a0 > >, None >;
-
-            template< Access a0, Access a1 > using Implicit_rDI_rSI = Match < Implicit< _rv_ < RDI, a0 >, _rv_ < RSI, a1 > >, None >;
-            
             template< Access a0, Access a1, Access a2, Access a3 > using By_Gy_rDX_Ey = Match < _By_ < a0 >, _Gy_ < a1 >, _ry_ < RDX, a2 >, _Ey_ < a3 >, None >;
             template< Access a0, Access a1, Access a2            > using Gy_By_Ey = Match < _Gy_ < a0 >, _By_ < a1 >, _Ey_ < a2 >, None >;
             template< Access a0, Access a1, Access a2            > using Gy_Ey_By = Match < _Gy_ < a0 >, _Ey_ < a1 >, _By_ < a2 >, None >;

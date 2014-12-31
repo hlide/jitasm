@@ -103,17 +103,13 @@ namespace jitasm
 
             /////////////
 
-            void aaa() { AppendInstr(I_AAA); }
+            void aaa(Reg16 const & a1 = ax) { AppendInstr(I_AAA, a1); }
 
-            void aad() { AppendInstr(I_AAD); }
+            void aad(Reg16 const & a1 = ax, Imm8 const & a2 = Imm8(5)) { AppendInstr(I_AAD, a1, a2); }
 
-            void aam() { AppendInstr(I_AAM); }
+            void aam(Reg16 const & a1 = ax, Imm8 const & a2 = Imm8(5)) { AppendInstr(I_AAM, a1, a2); }
 
-            void aas() { AppendInstr(I_AAS); }
-
-            void adx(Imm8 const & a1) { AppendInstr(I_ADX, a1); }
-
-            void amx(Imm8 const & a1) { AppendInstr(I_AMX, a1); }
+            void aas(Reg16 const & a1 = ax) { AppendInstr(I_AAS, a1); }
 
             void arpl(Mem16 const & a1, Reg16 const & a2) { AppendInstr(I_ARPL, a1, a2); }
 

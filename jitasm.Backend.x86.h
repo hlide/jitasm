@@ -283,9 +283,16 @@ namespace jitasm
 
             void EncodeInstr(Instr & instr);
 
+#ifdef JITASM_TEST
+            void TestInstr(InstrID id, std::vector< Instr > & list, bool is64);
+#endif
+
             void Assemble(Instr & instr)
             {
-                if (0 == (instr.encoding_flags_ & E_ENCODED)) EncodeInstr(instr);
+                if (0 == (instr.encoding_flags_ & E_ENCODED))
+                {
+                    EncodeInstr(instr);
+                }
 
                 switch (instr.GetID())
                 {

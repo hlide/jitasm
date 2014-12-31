@@ -46,7 +46,7 @@ static void capstone_Dump(FILE * out, cs_mode mode, void * code, size_t size)
 
     if (CS_ERR_OK == err)
     {
-        size_t count = ::cs_disasm(handle, (uint8_t const *)code, size, (uint64_t)code, 0, &insn);
+        size_t count = ::cs_disasm(handle, (uint8_t const *)code, size, (uint64_t)0x10000000, 0, &insn);
         if (count > 0)
         {
             for (size_t j = 0; j < count; ++j)
@@ -236,214 +236,23 @@ struct Frontend_x86_32 : jitasm::x86_32::Frontend$CRTP< Frontend_x86_32 >, CodeB
         Imm16 i16(0x5555);
         Imm32 i32(0x55555555);
 
-#if 1
-        AppendInstr(I_AAA);
-        AppendInstr(I_AAD);
-        AppendInstr(I_AAM);
-        AppendInstr(I_AAS);
-
-        AppendInstr(I_ADC, al, dl);
-        AppendInstr(I_ADC, ax, dx);
-        AppendInstr(I_ADC, eax, edx);
-        AppendInstr(I_ADC, byte_ptr[edx + ebx * 2 + 16], al);
-        AppendInstr(I_ADC, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_ADC, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_ADC, al, byte_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_ADC, ax, word_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_ADC, eax, dword_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_ADC, al, i8);
-        AppendInstr(I_ADC, dl, i8);
-        AppendInstr(I_ADC, ax, i16);
-        AppendInstr(I_ADC, dx, i16);
-        AppendInstr(I_ADC, eax, i32);
-        AppendInstr(I_ADC, edx, i32);
-        AppendInstr(I_ADC, dx, i8);
-        AppendInstr(I_ADC, edx, i8);
-
-        AppendInstr(I_ADD, al, dl);
-        AppendInstr(I_ADD, ax, dx);
-        AppendInstr(I_ADD, eax, edx);
-        AppendInstr(I_ADD, byte_ptr[edx + ebx * 2 + 16], al);
-        AppendInstr(I_ADD, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_ADD, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_ADD, al, byte_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_ADD, ax, word_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_ADD, eax, dword_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_ADD, al, i8);
         AppendInstr(I_ADD, dl, i8);
-        AppendInstr(I_ADD, ax, i16);
-        AppendInstr(I_ADD, dx, i16);
-        AppendInstr(I_ADD, eax, i32);
-        AppendInstr(I_ADD, edx, i32);
-        AppendInstr(I_ADD, dx, i8);
-        AppendInstr(I_ADD, edx, i8);
-
-        AppendInstr(I_ADX, i8);
-        AppendInstr(I_AMX, i8);
-        
-        AppendInstr(I_AND, al, dl);
-        AppendInstr(I_AND, ax, dx);
-        AppendInstr(I_AND, eax, edx);
-        AppendInstr(I_AND, byte_ptr[edx + ebx * 2 + 16], al);
-        AppendInstr(I_AND, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_AND, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_AND, al, byte_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_AND, ax, word_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_AND, eax, dword_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_AND, al, i8);
+        AppendInstr(I_OR, dl, i8);
+        AppendInstr(I_ADC, dl, i8);
+        AppendInstr(I_SBB, dl, i8);
         AppendInstr(I_AND, dl, i8);
-        AppendInstr(I_AND, ax, i16);
-        AppendInstr(I_AND, dx, i16);
-        AppendInstr(I_AND, eax, i32);
-        AppendInstr(I_AND, edx, i32);
-        AppendInstr(I_AND, dx, i8);
-        AppendInstr(I_AND, edx, i8);
-
-        AppendInstr(I_ARPL, word_ptr[edx + ebx * 2 + 16], ax);
-
-        AppendInstr(I_BOUND, ax, dword_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_BOUND, eax, qword_ptr[edx + ebx * 2 + 16]);
-
-        AppendInstr(I_BSF, ax, dx);
-        AppendInstr(I_BSF, eax, edx);
-        AppendInstr(I_BSF, ax, word_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_BSF, eax, dword_ptr[edx + ebx * 2 + 16]);
-
-        AppendInstr(I_BSR, ax, dx);
-        AppendInstr(I_BSR, eax, edx);
-        AppendInstr(I_BSR, ax, word_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_BSR, eax, dword_ptr[edx + ebx * 2 + 16]);
-
-        AppendInstr(I_BSWAP, eax);
-
-        AppendInstr(I_BT, ax, dx);
-        AppendInstr(I_BT, eax, edx);
-        AppendInstr(I_BT, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_BT, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_BT, ax, i8);
-        AppendInstr(I_BT, eax, i8);
-        AppendInstr(I_BT, word_ptr[edx + ebx * 2 + 16], i8);
-        AppendInstr(I_BT, dword_ptr[edx + ebx * 2 + 16], i8);
-
-        AppendInstr(I_BTC, ax, dx);
-        AppendInstr(I_BTC, eax, edx);
-        AppendInstr(I_BTC, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_BTC, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_BTC, ax, i8);
-        AppendInstr(I_BTC, eax, i8);
-        AppendInstr(I_BTC, word_ptr[edx + ebx * 2 + 16], i8);
-        AppendInstr(I_BTC, dword_ptr[edx + ebx * 2 + 16], i8);
-
-        AppendInstr(I_BTR, ax, dx);
-        AppendInstr(I_BTR, eax, edx);
-        AppendInstr(I_BTR, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_BTR, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_BTR, ax, i8);
-        AppendInstr(I_BTR, eax, i8);
-        AppendInstr(I_BTR, word_ptr[edx + ebx * 2 + 16], i8);
-        AppendInstr(I_BTR, dword_ptr[edx + ebx * 2 + 16], i8);
-
-        AppendInstr(I_BTS, ax, dx);
-        AppendInstr(I_BTS, eax, edx);
-        AppendInstr(I_BTS, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_BTS, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_BTS, ax, i8);
-        AppendInstr(I_BTS, eax, i8);
-        AppendInstr(I_BTS, word_ptr[edx + ebx * 2 + 16], i8);
-        AppendInstr(I_BTS, dword_ptr[edx + ebx * 2 + 16], i8);
-
-        AppendInstr(I_CALL, Imm16(0));
-        AppendInstr(I_CALL, Imm32(0));
-        AppendInstr(I_CALL, ax);
-        AppendInstr(I_CALL, eax);
-
-        AppendInstr(I_CBW);
-        AppendInstr(I_CWDE);
-        AppendInstr(I_CDQ);
-        AppendInstr(I_CLC);
-        AppendInstr(I_CLD);
-        AppendInstr(I_CLI);
-        AppendInstr(I_CMC);
-
-        for (size_t cc = 0; cc < 16; ++cc)
-        {
-            AppendCondInstr(I_CMOVcc, ConditionCode(cc), ax, dx);
-            AppendCondInstr(I_CMOVcc, ConditionCode(cc), eax, edx);
-            AppendCondInstr(I_CMOVcc, ConditionCode(cc), ax, word_ptr[edx + ebx * 2 + 16]);
-            AppendCondInstr(I_CMOVcc, ConditionCode(cc), eax, dword_ptr[edx + ebx * 2 + 16]);
-        }
-
-        AppendInstr(I_CMP, al, dl);
-        AppendInstr(I_CMP, ax, dx);
-        AppendInstr(I_CMP, eax, edx);
-        AppendInstr(I_CMP, byte_ptr[edx + ebx * 2 + 16], al);
-        AppendInstr(I_CMP, word_ptr[edx + ebx * 2 + 16], ax);
-        AppendInstr(I_CMP, dword_ptr[edx + ebx * 2 + 16], eax);
-        AppendInstr(I_CMP, al, byte_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_CMP, ax, word_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_CMP, eax, dword_ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_CMP, al, i8);
+        AppendInstr(I_SUB, dl, i8);
+        AppendInstr(I_XOR, dl, i8);
         AppendInstr(I_CMP, dl, i8);
-        AppendInstr(I_CMP, ax, i16);
-        AppendInstr(I_CMP, dx, i16);
-        AppendInstr(I_CMP, eax, i32);
-        AppendInstr(I_CMP, edx, i32);
-        AppendInstr(I_CMP, dx, i8);
-        AppendInstr(I_CMP, edx, i8);
 
-        AppendInstr(I_CMPS_B);
-        AppendInstr(I_CMPS_W);
-        AppendInstr(I_CMPS_D);
-
-        // Group LZCNT
-        AppendInstr(I_LZCNT, eax, edx);
-        AppendInstr(I_LZCNT, eax, ptr[edx + ebx * 2 + 16]);
-
-        // Group BIM1
-        AppendInstr(I_ANDN, eax, edx, ecx);
-        AppendInstr(I_ANDN, eax, edx, ptr[ecx + ebx * 2 + 16]);
-        AppendInstr(I_BEXTR, eax, edx, ecx);
-        AppendInstr(I_BEXTR, eax, ptr[edx + ebx * 2 + 16], ecx);
-        AppendInstr(I_BLSI, eax, ecx);
-        AppendInstr(I_BLSI, eax, ptr[ecx + ebx * 2 + 16]);
-        AppendInstr(I_BLSMSK, eax, ecx);
-        AppendInstr(I_BLSMSK, eax, ptr[ecx + ebx * 2 + 16]);
-        AppendInstr(I_BLSR, eax, ecx);
-        AppendInstr(I_BLSR, eax, ptr[ecx + ebx * 2 + 16]);
-        AppendInstr(I_TZCNT, eax, edx);
-        AppendInstr(I_TZCNT, eax, ptr[edx + ebx * 2 + 16]);
-
-        // Group BIM2
-        AppendInstr(I_BZHI, eax, edx, ecx);
-        AppendInstr(I_BZHI, eax, ptr[edx + ebx * 2 + 16], ecx);
-        AppendInstr(I_MULX, eax, ecx, edx, ebx);
-        AppendInstr(I_MULX, eax, ecx, edx, ptr[esi + ebx * 2 + 16]);
-        AppendInstr(I_PDEP, eax, edx, ecx);
-        AppendInstr(I_PDEP, eax, edx, ptr[ecx + ebx * 2 + 16]);
-        AppendInstr(I_PEXT, eax, edx, ecx);
-        AppendInstr(I_PEXT, eax, edx, ptr[ecx + ebx * 2 + 16]);
-        AppendInstr(I_RORX, eax, edx, Imm8(8));
-        AppendInstr(I_RORX, eax, ptr[edx + ebx * 2 + 16], Imm8(8));
-        AppendInstr(I_SARX, eax, edx, ecx);
-        AppendInstr(I_SARX, eax, ptr[edx + ebx * 2 + 16], ecx);
-        AppendInstr(I_SHLX, eax, edx, ecx);
-        AppendInstr(I_SHLX, eax, ptr[edx + ebx * 2 + 16], ecx);
-        AppendInstr(I_SHRX, eax, edx, ecx);
-        AppendInstr(I_SHRX, eax, ptr[edx + ebx * 2 + 16], ecx);
-
-        // Group ADX
-        AppendInstr(I_ADCX, eax, edx);
-        AppendInstr(I_ADCX, eax, ptr[edx + ebx * 2 + 16]);
-        AppendInstr(I_ADOX, eax, edx);
-        AppendInstr(I_ADOX, eax, ptr[edx + ebx * 2 + 16]);
-#endif
-
-        //AppendInstr(I_MOV, al, ptr[0x55555555]);
-        //AppendInstr(I_MOV, ax, ptr[0x55555555]);
-        //AppendInstr(I_MOV, eax, ptr[0x55555555]);
-        //AppendInstr(I_MOV, ptr[0x55555555], al);
-        //AppendInstr(I_MOV, ptr[0x55555555], ax);
-        //AppendInstr(I_MOV, ptr[0x55555555], eax);
+        AppendInstr(I_ADD, byte_ptr[0x55555555], i8);
+        AppendInstr(I_OR, byte_ptr[0x55555555], i8);
+        AppendInstr(I_ADC, byte_ptr[0x55555555], i8);
+        AppendInstr(I_SBB, byte_ptr[0x55555555], i8);
+        AppendInstr(I_AND, byte_ptr[0x55555555], i8);
+        AppendInstr(I_SUB, byte_ptr[0x55555555], i8);
+        AppendInstr(I_XOR, byte_ptr[0x55555555], i8);
+        AppendInstr(I_CMP, byte_ptr[0x55555555], i8);
     }
 };
 
@@ -456,122 +265,71 @@ struct Frontend_x86_64 : jitasm::x86_64::Frontend$CRTP< Frontend_x86_64 >, CodeB
         Imm8  i8(0x55);
         Imm16 i16(0x5555);
         Imm32 i32(0x55555555);
-
-#if 1
-        AppendInstr(I_ADC, rax, rdx);
-        AppendInstr(I_ADC, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_ADC, rax, qword_ptr[rdx + rbx * 2 + 16]);
-        AppendInstr(I_ADC, rax, i32);
-        AppendInstr(I_ADC, rdx, i32);
-        AppendInstr(I_ADC, rdx, i8);
-
-        AppendInstr(I_ADD, rax, rdx);
-        AppendInstr(I_ADD, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_ADD, rax, qword_ptr[rdx + rbx * 2 + 16]);
-        AppendInstr(I_ADD, rax, i32);
-        AppendInstr(I_ADD, rdx, i32);
-        AppendInstr(I_ADD, rdx, i8);
-
-        AppendInstr(I_AND, rax, rdx);
-        AppendInstr(I_AND, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_AND, rax, qword_ptr[rdx + rbx * 2 + 16]);
-        AppendInstr(I_AND, rax, i32);
-        AppendInstr(I_AND, rdx, i32);
-        AppendInstr(I_AND, rdx, i8);
-
-        AppendInstr(I_BOUND, rax, qword_ptr[rdx + rbx * 2 + 16]);
-
-        AppendInstr(I_BSF, rax, rdx);
-        AppendInstr(I_BSF, rax, qword_ptr[rdx + rbx * 2 + 16]);
-
-        AppendInstr(I_BSR, rax, rdx);
-        AppendInstr(I_BSR, rax, qword_ptr[rdx + rbx * 2 + 16]);
-
-        AppendInstr(I_BSWAP, rax);
-
-        AppendInstr(I_BT, rax, rdx);
-        AppendInstr(I_BT, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_BT, rax, i8);
-        AppendInstr(I_BT, qword_ptr[rdx + rbx * 2 + 16], i8);
-
-        AppendInstr(I_BTC, rax, rdx);
-        AppendInstr(I_BTC, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_BTC, rax, i8);
-        AppendInstr(I_BTC, qword_ptr[rdx + rbx * 2 + 16], i8);
-
-        AppendInstr(I_BTR, rax, rdx);
-        AppendInstr(I_BTR, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_BTR, rax, i8);
-        AppendInstr(I_BTR, qword_ptr[rdx + rbx * 2 + 16], i8);
-
-        AppendInstr(I_BTS, rax, rdx);
-        AppendInstr(I_BTS, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_BTS, rax, i8);
-        AppendInstr(I_BTS, qword_ptr[rdx + rbx * 2 + 16], i8);
-
-        AppendInstr(I_CDQE);
-
-        for (size_t cc = 0; cc < 16; ++cc)
-        {
-            AppendCondInstr(I_CMOVcc, ConditionCode(cc), rax, rdx);
-            AppendCondInstr(I_CMOVcc, ConditionCode(cc), rax, qword_ptr[rdx + rbx * 2 + 16]);
-        }
-
-        AppendInstr(I_CMP, rax, rdx);
-        AppendInstr(I_CMP, qword_ptr[rdx + rbx * 2 + 16], rax);
-        AppendInstr(I_CMP, rax, qword_ptr[rdx + rbx * 2 + 16]);
-        AppendInstr(I_CMP, rax, i32);
-        AppendInstr(I_CMP, rdx, i32);
-        AppendInstr(I_CMP, rdx, i8);
-
-        AppendInstr(I_CMPS_Q);
-
-        AppendInstr(I_ADCX, rax, rdx);
-        AppendInstr(I_ADCX, rax, ptr[rdx + rbx * 2 + 16]);
-        AppendInstr(I_ADOX, rax, rdx);
-        AppendInstr(I_ADOX, rax, ptr[rdx + rbx * 2 + 16]);
-
-        AppendInstr(I_MOV, al, ptr[0x5555555555555555]);
-        AppendInstr(I_MOV, ax, ptr[0x5555555555555555]);
-        AppendInstr(I_MOV, eax, ptr[0x5555555555555555]);
-        AppendInstr(I_MOV, rax, ptr[0x5555555555555555]);
-        AppendInstr(I_MOV, ptr[0x5555555555555555], al);
-        AppendInstr(I_MOV, ptr[0x5555555555555555], ax);
-        AppendInstr(I_MOV, ptr[0x5555555555555555], eax);
-        AppendInstr(I_MOV, ptr[0x5555555555555555], rax);
-#endif
     }
 };
 
-void test_x86()
+void test_x86_32()
 {
-    Frontend_x86_32 x86;
+    Frontend_x86_32 x86_32;
 
-    void * code = x86.GetCodePointer();
-    size_t size = x86.GetCodeSize();
+    fprintf(stdout, "test_x86 - 32-bit mode:\r\n=========\r\n");
 
-    fprintf(stdout, "test_x86:\r\n=========\r\n");
+#if 1
+    for (jitasm::x86::InstrID id = jitasm::x86::I_AAA; id <= jitasm::x86::I_XTEST; id = jitasm::x86::InstrID(size_t(id) + 1))
+    {
+        x86_32.Test(id);
+
+        void * code = x86_32.GetCodePointer();
+        size_t size = x86_32.GetCodeSize();
+
+        if (size)
+        {
+            capstone_Dump(stdout, CS_MODE_32, code, size);
+            fprintf(stdout, "\r\n");
+        }
+    }
+#else
+    void * code = x86_32.GetCodePointer();
+    size_t size = x86_32.GetCodeSize();
+
     capstone_Dump(stdout, CS_MODE_32, code, size);
+#endif
+
     fprintf(stdout, "\r\n");
 }
 
-void test_x64()
+void test_x86_64()
 {
-    Frontend_x86_64 x64;
+    Frontend_x86_64 x86_64;
 
-    void * code = x64.GetCodePointer();
-    size_t size = x64.GetCodeSize();
+    fprintf(stdout, "test_x86 - 64-bit mode:\r\n=========\r\n");
+#if 1
+    for (jitasm::x86::InstrID id = jitasm::x86::I_AAA; id <= jitasm::x86::I_XTEST; id = jitasm::x86::InstrID(size_t(id) + 1))
+    {
+        x86_64.Test(id);
 
-    fprintf(stdout, "test_x64:\r\n=========\r\n");
+        void * code = x86_64.GetCodePointer();
+        size_t size = x86_64.GetCodeSize();
+
+        if (size)
+        {
+            capstone_Dump(stdout, CS_MODE_64, code, size);
+            fprintf(stdout, "\r\n");
+        }
+    }
+#else
+    void * code = x86_64.GetCodePointer();
+    size_t size = x86_64.GetCodeSize();
     capstone_Dump(stdout, CS_MODE_64, code, size);
+#endif
     fprintf(stdout, "\r\n");
 }
 
 int main(int argc, char * argv[])
 {
-    test_x86();
+    test_x86_32();
 
-    test_x64();
+    test_x86_64();
 
     system("pause");
 

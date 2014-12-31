@@ -312,6 +312,41 @@ namespace jitasm
                 assembled_ = true;
             }
 
+#ifdef JITASM_TEST
+            void Test(InstrID id)
+            {
+                std::lock_guard< std::mutex > guard(codelock_);
+
+                instrs_.clear();
+                labels_.clear();
+                instrs_.reserve(128);
+
+                Backend pre(is64_);
+
+                pre.TestInstr(id, instrs_, is64_);
+
+                for (auto & instr : instrs_)
+                {
+                    pre.Assemble(instr);
+                }
+
+                size_t codesize = pre.GetSize();
+
+                derived().ResetBuffer(codesize);
+
+                Backend backend(is64_, derived().GetBufferPointer(), derived().GetCodeSize());
+                for (auto & instr : instrs_)
+                {
+                    backend.Assemble(instr);
+                }
+
+                InstrList().swap(instrs_);
+                LabelList().swap(labels_);
+
+                assembled_ = true;
+            }
+#endif
+
             void AppendInstr(InstrID id, detail::Opd const & opd1 = detail::Opd(), detail::Opd const & opd2 = detail::Opd(), detail::Opd const & opd3 = detail::Opd(), detail::Opd const & opd4 = detail::Opd(), detail::Opd const & opd5 = detail::Opd(), detail::Opd const & opd6 = detail::Opd())
             {
                 instrs_.push_back(Instr(id, opd1, opd2, opd3, opd4, opd5, opd6));
