@@ -1,3 +1,4 @@
+#include "jitasm.x86.encoder.h"
 #include "jitasm.Backend.x86.h"
 
 namespace jitasm
@@ -6,1327 +7,85 @@ namespace jitasm
     {
         namespace encoder
         {
-#ifdef JITASM_TEST
-            template< typename OpdN >
-            struct AddressingPtr
-            {
-                jitasm::x86::OpdSize size_;
-                AddressingPtr & operator()(bool is64) { size_ = is64 ? O_SIZE_64 : O_SIZE_32; return *this; }
-                Mem$<OpdN> operator[](sint32 disp)	{ return Mem$<OpdN>(size_, size_, RegID::Invalid(), RegID::Invalid(), 0, disp); }
-                Mem$<OpdN> operator[](uint32 disp)	{ return Mem$<OpdN>(size_, size_, RegID::Invalid(), RegID::Invalid(), 0, (sint32)disp); }
-            };
-
-            static AddressingPtr< Opd8 >  byte_ptr;
-            static AddressingPtr< Opd16 > word_ptr;
-            static AddressingPtr< Opd32 > dword_ptr;
-            static AddressingPtr< Opd64 > qword_ptr;
-#endif
-
-            template< InstrID id, size_t opcode, typename Operand, typename ...Operands >
-            struct Encode$
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    if (Encode$< id, opcode, Operand >::Encode(instr, is64))
-                    {
-                        return Encode$< id, opcode, Operands... >::Encode(instr, is64);
-                    }
-                    return false;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    Encode$< id, opcode, Operand >::Test(list, is64);
-                    Encode$< id, opcode, Operands... >::Test(list, is64);
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, typename Operand >
-            struct Encode$< id, opcode, Operand >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return false;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            /////////////
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, None >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, Jb >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = Imm8(sint8(opd0.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Imm8(0)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode >
-            struct Encode$ < id, opcode, Jw >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = Imm16(sint16(opd0.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Imm16(0)));
-                }
-#endif
-            };
-
-
-            template< InstrID id, size_t opcode >
-            struct Encode$ < id, opcode, Jd >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = Imm32(sint32(opd0.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Imm32(0)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Eb < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg8(BL)));
-                    list.push_back(Instr(id, byte_ptr(is64)[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Ew < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX)));
-                    list.push_back(Instr(id, word_ptr(is64)[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Ed < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX)));
-                    list.push_back(Instr(id, dword_ptr(is64)[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Eq < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg64(RBX)));
-                        list.push_back(Instr(id, qword_ptr(is64)[0x55555555]));
-                    }
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Gb < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg8(BL)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Gw < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Gd < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Gq < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg64(RBX)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Zv < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Mb < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Eb_Gb < a0, a1 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a1 >(opd1);
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg8(BL), Reg8(DL)));
-                    list.push_back(Instr(id, byte_ptr(is64)[0x55555555], Reg8(DL)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Ew_Gw < a0, a1 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a1 >(opd1);
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX), Reg16(DX)));
-                    list.push_back(Instr(id, word_ptr(is64)[0x55555555], Reg16(DX)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Ed_Gd < a0, a1 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a1 >(opd1);
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX), Reg32(EDX)));
-                    list.push_back(Instr(id, dword_ptr(is64)[0x55555555], Reg32(EDX)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Eq_Gq < a0, a1 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a1 >(opd1);
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg32(RBX), Reg32(RDX)));
-                        list.push_back(Instr(id, qword_ptr(is64)[0x55555555], Reg64(RDX)));
-                    }
-                }
-#endif
-            };
-
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gb_Eb < a0, a1 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg8(BL), Reg8(DL)));
-                    list.push_back(Instr(id, Reg8(BL), byte_ptr(is64)[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gw_Ew < a0, a1 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX), Reg16(DX)));
-                    list.push_back(Instr(id, Reg16(BX), word_ptr(is64)[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gd_Ed < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX), Reg32(EDX)));
-                    list.push_back(Instr(id, Reg32(EBX), dword_ptr(is64)[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gq_Eq < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg64(RBX), Reg64(RDX)));
-                        list.push_back(Instr(id, Reg64(RBX), qword_ptr(is64)[0x55555555]));
-                    }
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gw_Gw < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX), Reg16(DX)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gd_Gd < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX), Reg32(EDX)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gq_Gq < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg32(RBX), Reg32(RDX)));
-                    }
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Gw_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX), Imm8(0x55)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Gd_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX), Imm8(0x55)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Gq_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg32(RBX), Imm8(0x55)));
-                    }
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gw_Md < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX), dword_ptr[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gd_Mq < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(RBX), qword_ptr[0x55555555]));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, Gy_Ey_Ib < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    auto opd2 = instr.opd_[2];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    instr.opd_[2] = Imm8(uint8(opd2.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1, Access a2 >
-            struct Encode$ < id, opcode, Eb_AL_Gb < a0, a1, a2 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    auto opd2 = instr.opd_[2];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1, Access a2 >
-            struct Encode$ < id, opcode, Ev_rAX_Gv < a0, a1, a2 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    auto opd2 = instr.opd_[2];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, AL_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm8(uint8(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg8(AL), Imm8(0x55)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, AX_Iw < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm16(sint16(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(AX), Imm16(0x5555)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, EAX_Id < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm32(sint32(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EAX), Imm32(0x55555555)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, RAX_Id < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = Imm32(sint32(opd1.GetImm()));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg64(RAX), Imm32(0x55555555)));
-                    }
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Eb_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(uint8(opd1.GetImm()));
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg8(BL), Imm8(0x55)));
-                    list.push_back(Instr(id, byte_ptr(is64)[0x55555555], Imm8(0x55)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Ew_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(uint8(opd1.GetImm()));
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX), Imm8(0x55)));
-                    list.push_back(Instr(id, word_ptr(is64)[0x55555555], Imm8(0x55)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Ed_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(uint8(opd1.GetImm()));
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX), Imm8(0x55)));
-                    list.push_back(Instr(id, dword_ptr(is64)[0x55555555], Imm8(0x55)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Eq_Ib < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(uint8(opd1.GetImm()));
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg64(RBX), Imm8(0x55)));
-                        list.push_back(Instr(id, qword_ptr(is64)[0x55555555], Imm8(0x55)));
-                    }
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Ew_Iw < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm16(sint16(opd1.GetImm()));
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg16(BX), Imm16(0x5555)));
-                    list.push_back(Instr(id, word_ptr(is64)[0x55555555], Imm16(0x5555)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Ed_Id < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm32(sint32(opd1.GetImm()));
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    list.push_back(Instr(id, Reg32(EBX), Imm32(0x55555555)));
-                    list.push_back(Instr(id, dword_ptr(is64)[0x55555555], Imm32(0x55555555)));
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0 >
-            struct Encode$ < id, opcode, Eq_Id < a0 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm32(sint32(opd1.GetImm()));
-                    instr.opd_[1] = AlterAccess< a0 >(opd0);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.push_back(Instr(id, Reg64(RBX), Imm32(0x55555555)));
-                        list.push_back(Instr(id, qword_ptr(is64)[0x55555555], Imm32(0x55555555)));
-                    }
-                }
-#endif
-            };
-
-            /// BMI1-BMI2
-            template< InstrID id, size_t opcode, Access a0, Access a1, Access a2 >
-            struct Encode$ < id, opcode, Gy_By_Ey < a0, a1, a2> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    auto opd2 = instr.opd_[2];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a2 >(opd2);
-                    instr.opd_[2] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1, Access a2 >
-            struct Encode$ < id, opcode, Gy_Ey_By < a0, a1, a2> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    auto opd2 = instr.opd_[2];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    instr.opd_[2] = AlterAccess< a2 >(opd2);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, Access a0, Access a1, Access a2, Access a3 >
-            struct Encode$ < id, opcode, By_Gy_rDX_Ey < a0, a1, a2, a3 > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    auto opd2 = instr.opd_[2];
-                    auto opd3 = instr.opd_[3];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a3 >(opd3);
-                    instr.opd_[2] = AlterAccess< a1 >(opd1);
-                    instr.opd_[3] = detail::Dummy(AlterAccess< a3 >(opd3), opd3);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-
-            template< InstrID id, size_t opcode, Access a0, Access a1 >
-            struct Encode$ < id, opcode, By_Ey < a0, a1> >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = AlterAccess< a0 >(opd0);
-                    instr.opd_[1] = AlterAccess< a1 >(opd1);
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            /////////////
-
-            template< InstrID id, size_t opcode, size_t code >
-            struct Encode$ < id, opcode, Group1 < code > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd1;
-                    instr.opd_[2] = opd0;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, size_t code >
-            struct Encode$ < id, opcode, Group4 < code > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd0;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, size_t code >
-            struct Encode$ < id, opcode, Group5 < code > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd0;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, size_t code >
-            struct Encode$ < id, opcode, Group8 < code > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd1;
-                    instr.opd_[2] = opd0;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, size_t code >
-            struct Encode$ < id, opcode, Group15 < code > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd1;
-                    instr.opd_[2] = opd0;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, size_t code >
-            struct Encode$ < id, opcode, Group17 < code > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opd0 = instr.opd_[0];
-                    auto opd1 = instr.opd_[1];
-                    instr.opd_[0] = Imm8(code);
-                    instr.opd_[1] = opd1;
-                    instr.opd_[2] = opd0;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            /////////////
-
-            template< InstrID id, size_t opcode, size_t flags >
-            struct Encode$ < id, opcode, EncodingFlags < flags > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    instr.encoding_flags_ |= flags;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            /////////////
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, OSb >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, OSw >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    instr.encoding_flags_ |= E_OPERAND_SIZE_PREFIX;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, OSd >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, OSq >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    instr.encoding_flags_ |= E_REXW_PREFIX;
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, i64 >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return !is64;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.clear();
-                    }
-                }
-#endif
-            };
-
-            template< size_t id, size_t opcode >
-            struct Encode$ < id, opcode, o64 >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return is64;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                    if (is64)
-                    {
-                        list.clear();
-                    }
-                }
-#endif
-            };
-
-            template< InstrID id, size_t opcode, size_t index, PhysicalRegID regid >
-            struct Encode$ < id, opcode, DummyReg < index, regid > >
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    auto opdi = instr.opd_[index];
-                    instr.opd_[index] = detail::Dummy(opdi, Reg64(regid));
-                    return true;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
-            /////////////
-
-            template< InstrID id >
-            struct Opcode$
-            {
-                static bool Encode(Instr & instr, bool is64)
-                {
-                    return false;
-                }
-#ifdef JITASM_TEST
-                static void Test(std::vector< Instr > & list, bool is64)
-                {
-                }
-#endif
-            };
-
             // Group 8086+
-            template<> struct Opcode$< I_AAA > : Opcode < I_AAA, 0x00000037, Gw < RW >, DummyReg< 0, RAX >, i64 > {};
+            template<> struct Opcode$< I_AAA > : Opcode < I_AAA, 0x00000037, Gw < RW >, DummyRw< 0, AX >, i64 > {};
 
-            template<> struct Opcode$< I_AAD > : Opcode < I_AAD, 0x000000D5, Gw_Ib < RW >, DummyReg< 0, RAX >, i64 >{};
+            template<> struct Opcode$< I_AAD > : Opcode < I_AAD, 0x000000D5, Gw_Ib < RW >, DummyRw< 0, AX >, i64 > {};
 
-            template<> struct Opcode$< I_AAM > : Opcode < I_AAM, 0x000000D4, Gw_Ib < RW >, DummyReg< 0, RAX >, i64 >{};
+            template<> struct Opcode$< I_AAM > : Opcode < I_AAM, 0x000000D4, Gw_Ib < RW >, DummyRw< 0, AX >, i64 > {};
 
-            template<> struct Opcode$< I_AAS > : Opcode < I_AAS, 0x0000003F, Gw < RW >, DummyReg< 0, RAX >, i64 >{};
+            template<> struct Opcode$< I_AAS > : Opcode < I_AAS, 0x0000003F, Gw < RW >, DummyRw< 0, AX >, i64 > {};
 
             template<> struct Opcode$< I_ADC > :
                 Switch
                 <
-                /**/ Opcode < I_ADC, 0x00000012, Gb_Eb < RW, R >, OSb >,
-                /**/ Opcode < I_ADC, 0x00000013, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_ADC, 0x00000013, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_ADC, 0x00000013, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_ADC, 0x00000010, Eb_Gb < RW, R >, OSb >,
-                /**/ Opcode < I_ADC, 0x00000011, Ew_Gw < RW, R >, OSw >,
-                /**/ Opcode < I_ADC, 0x00000011, Ed_Gd < RW, R >, OSd >,
-                /**/ Opcode < I_ADC, 0x00000011, Eq_Gq < RW, R >, OSq >,
-                /**/ Opcode < I_ADC, 0x00000014, AL_Ib < RW >, OSb >,
-                /**/ Opcode < I_ADC, 0x00000080, Eb_Ib < RW >, OSb, Group1 <2> >,
-                /**/ Opcode < I_ADC, 0x00000083, Ew_Ib < RW >, OSw, Group1 <2> >,
-                /**/ Opcode < I_ADC, 0x00000083, Ed_Ib < RW >, OSd, Group1 <2> >,
-                /**/ Opcode < I_ADC, 0x00000083, Eq_Ib < RW >, OSq, Group1 <2> >,
-                /**/ Opcode < I_ADC, 0x00000015, AX_Iw < RW >, OSw >,
-                /**/ Opcode < I_ADC, 0x00000015, EAX_Id < RW >, OSd >,
-                /**/ Opcode < I_ADC, 0x00000015, RAX_Id < RW >, OSq >,
-                /**/ Opcode < I_ADC, 0x00000081, Ew_Iw < RW >, OSw, Group1 <2> >,
-                /**/ Opcode < I_ADC, 0x00000081, Ed_Id < RW >, OSd, Group1 <2> >,
-                /**/ Opcode < I_ADC, 0x00000081, Eq_Id < RW >, OSq, Group1 <2> >
+                /**/ Opcode < I_ADC, 0x00000012, Gb_Eb  < RW, R >, OSb             >,
+                /**/ Opcode < I_ADC, 0x00000013, Gw_Ew  < RW, R >, OSw             >,
+                /**/ Opcode < I_ADC, 0x00000013, Gd_Ed  < RW, R >, OSd             >,
+                /**/ Opcode < I_ADC, 0x00000013, Gq_Eq  < RW, R >, OSq             >,
+                /**/ Opcode < I_ADC, 0x00000010, Eb_Gb  < RW, R >, OSb             >,
+                /**/ Opcode < I_ADC, 0x00000011, Ew_Gw  < RW, R >, OSw             >,
+                /**/ Opcode < I_ADC, 0x00000011, Ed_Gd  < RW, R >, OSd             >,
+                /**/ Opcode < I_ADC, 0x00000011, Eq_Gq  < RW, R >, OSq             >,
+                /**/ Opcode < I_ADC, 0x00000014, AL_Ib  < RW    >                  >,
+                /**/ Opcode < I_ADC, 0x00000080, Eb_Ib  < RW    >, OSb, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000083, Ew_Ib  < RW    >, OSw, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000083, Ed_Ib  < RW    >, OSd, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000083, Eq_Ib  < RW    >, OSq, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000015, AX_Iw  < RW    >, OSw             >,
+                /**/ Opcode < I_ADC, 0x00000015, EAX_Id < RW    >, OSd             >,
+                /**/ Opcode < I_ADC, 0x00000015, RAX_Id < RW    >, OSq             >,
+                /**/ Opcode < I_ADC, 0x00000081, Ew_Iw  < RW    >, OSw, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000081, Ed_Id  < RW    >, OSd, Group1 <2> >,
+                /**/ Opcode < I_ADC, 0x00000081, Eq_Id  < RW    >, OSq, Group1 <2> >
                 > {};
 
             template<> struct Opcode$< I_ADD > :
                 Switch
                 <
-                /**/ Opcode < I_ADD, 0x00000002, Gb_Eb < RW, R >, OSb >,
-                /**/ Opcode < I_ADD, 0x00000003, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_ADD, 0x00000003, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_ADD, 0x00000003, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_ADD, 0x00000003, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_ADD, 0x00000003, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_ADD, 0x00000003, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_ADD, 0x00000000, Eb_Gb < RW, R >, OSb >,
-                /**/ Opcode < I_ADD, 0x00000001, Ew_Gw < RW, R >, OSw >,
-                /**/ Opcode < I_ADD, 0x00000001, Ed_Gd < RW, R >, OSd >,
-                /**/ Opcode < I_ADD, 0x00000001, Eq_Gq < RW, R >, OSq >,
-                /**/ Opcode < I_ADD, 0x00000004, AL_Ib < RW > >,
-                /**/ Opcode < I_ADD, 0x00000080, Eb_Ib < RW >, OSb, Group1 <0> >,
-                /**/ Opcode < I_ADD, 0x00000083, Ew_Ib < RW >, OSw, Group1 <0> >,
-                /**/ Opcode < I_ADD, 0x00000083, Ed_Ib < RW >, OSd, Group1 <0> >,
-                /**/ Opcode < I_ADD, 0x00000083, Eq_Ib < RW >, OSq, Group1 <0> >,
-                /**/ Opcode < I_ADD, 0x00000005, AX_Iw < RW >, OSw >,
-                /**/ Opcode < I_ADD, 0x00000005, EAX_Id < RW >, OSd >,
-                /**/ Opcode < I_ADD, 0x00000005, RAX_Id < RW >, OSq >,
-                /**/ Opcode < I_ADD, 0x00000081, Ew_Iw < RW >, OSw, Group1 <0> >,
-                /**/ Opcode < I_ADD, 0x00000081, Ed_Id < RW >, OSd, Group1 <0> >,
-                /**/ Opcode < I_ADD, 0x00000081, Eq_Id < RW >, OSq, Group1 <0> >
+                /**/ Opcode < I_ADD, 0x00000002, Gb_Eb  < RW, R >, OSb             >,
+                /**/ Opcode < I_ADD, 0x00000003, Gw_Ew  < RW, R >, OSw             >,
+                /**/ Opcode < I_ADD, 0x00000003, Gd_Ed  < RW, R >, OSd             >,
+                /**/ Opcode < I_ADD, 0x00000003, Gq_Eq  < RW, R >, OSq             >,
+                /**/ Opcode < I_ADD, 0x00000000, Eb_Gb  < RW, R >, OSb             >,
+                /**/ Opcode < I_ADD, 0x00000001, Ew_Gw  < RW, R >, OSw             >,
+                /**/ Opcode < I_ADD, 0x00000001, Ed_Gd  < RW, R >, OSd             >,
+                /**/ Opcode < I_ADD, 0x00000001, Eq_Gq  < RW, R >, OSq             >,
+                /**/ Opcode < I_ADD, 0x00000004, AL_Ib  < RW    >                  >,
+                /**/ Opcode < I_ADD, 0x00000080, Eb_Ib  < RW    >, OSb, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000083, Ew_Ib  < RW    >, OSw, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000083, Ed_Ib  < RW    >, OSd, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000083, Eq_Ib  < RW    >, OSq, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000005, AX_Iw  < RW    >, OSw             >,
+                /**/ Opcode < I_ADD, 0x00000005, EAX_Id < RW    >, OSd             >,
+                /**/ Opcode < I_ADD, 0x00000005, RAX_Id < RW    >, OSq             >,
+                /**/ Opcode < I_ADD, 0x00000081, Ew_Iw  < RW    >, OSw, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000081, Ed_Id  < RW    >, OSd, Group1 <0> >,
+                /**/ Opcode < I_ADD, 0x00000081, Eq_Id  < RW    >, OSq, Group1 <0> >
                 > {};
 
             template<> struct Opcode$< I_AND > :
                 Switch
                 <
-                /**/ Opcode < I_AND, 0x00000022, Gb_Eb < RW, R >, OSb >,
-                /**/ Opcode < I_AND, 0x00000023, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_AND, 0x00000023, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_AND, 0x00000023, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_AND, 0x00000020, Eb_Gb < RW, R >, OSb >,
-                /**/ Opcode < I_AND, 0x00000021, Ew_Gw < RW, R >, OSw >,
-                /**/ Opcode < I_AND, 0x00000021, Ed_Gd < RW, R >, OSd >,
-                /**/ Opcode < I_AND, 0x00000021, Eq_Gq < RW, R >, OSq >,
-                /**/ Opcode < I_AND, 0x00000024, AL_Ib < RW > >,
-                /**/ Opcode < I_AND, 0x00000080, Eb_Ib < RW >, OSb, Group1 <4> >,
-                /**/ Opcode < I_AND, 0x00000083, Ew_Ib < RW >, OSw, Group1 <4> >,
-                /**/ Opcode < I_AND, 0x00000083, Ed_Ib < RW >, OSd, Group1 <4> >,
-                /**/ Opcode < I_AND, 0x00000083, Eq_Ib < RW >, OSq, Group1 <4> >,
-                /**/ Opcode < I_AND, 0x00000025, AX_Iw < RW >, OSw >,
-                /**/ Opcode < I_AND, 0x00000025, EAX_Id < RW >, OSd >,
-                /**/ Opcode < I_AND, 0x00000025, RAX_Id < RW >, OSd >,
-                /**/ Opcode < I_AND, 0x00000081, Ew_Iw < RW >, OSw, Group1 <4> >,
-                /**/ Opcode < I_AND, 0x00000081, Ed_Id < RW >, OSd, Group1 <4> >,
-                /**/ Opcode < I_AND, 0x00000081, Eq_Id < RW >, OSq, Group1 <4> >
+                /**/ Opcode < I_AND, 0x00000022, Gb_Eb  < RW, R >, OSb             >,
+                /**/ Opcode < I_AND, 0x00000023, Gw_Ew  < RW, R >, OSw             >,
+                /**/ Opcode < I_AND, 0x00000023, Gd_Ed  < RW, R >, OSd             >,
+                /**/ Opcode < I_AND, 0x00000023, Gq_Eq  < RW, R >, OSq             >,
+                /**/ Opcode < I_AND, 0x00000020, Eb_Gb  < RW, R >, OSb             >,
+                /**/ Opcode < I_AND, 0x00000021, Ew_Gw  < RW, R >, OSw             >,
+                /**/ Opcode < I_AND, 0x00000021, Ed_Gd  < RW, R >, OSd             >,
+                /**/ Opcode < I_AND, 0x00000021, Eq_Gq  < RW, R >, OSq             >,
+                /**/ Opcode < I_AND, 0x00000024, AL_Ib  < RW    >                  >,
+                /**/ Opcode < I_AND, 0x00000080, Eb_Ib  < RW    >, OSb, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000083, Ew_Ib  < RW    >, OSw, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000083, Ed_Ib  < RW    >, OSd, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000083, Eq_Ib  < RW    >, OSq, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000025, AX_Iw  < RW    >, OSw             >,
+                /**/ Opcode < I_AND, 0x00000025, EAX_Id < RW    >, OSd             >,
+                /**/ Opcode < I_AND, 0x00000025, RAX_Id < RW    >, OSq             >,
+                /**/ Opcode < I_AND, 0x00000081, Ew_Iw  < RW    >, OSw, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000081, Ed_Id  < RW    >, OSd, Group1 <4> >,
+                /**/ Opcode < I_AND, 0x00000081, Eq_Id  < RW    >, OSq, Group1 <4> >
                 > {};
 
             template<> struct Opcode$< I_CALL > :
@@ -1339,7 +98,7 @@ namespace jitasm
                 /**/ Opcode < I_CALL, 0x000000FF, Eq < R >, OSq, Group5 <2> >
                 > {};
 
-            template<> struct Opcode$< I_CBW > : Opcode < I_CBW, 0x000000098, Gw < RW >, OSw, DummyReg< 0, RAX > > {};
+            template<> struct Opcode$< I_CBW > : Opcode < I_CBW, 0x000000098, Gw < RW >, OSw, DummyRw< 0, AX > > {};
 
             template<> struct Opcode$< I_CLC > : Opcode < I_CLC, 0x0000000F8, None > {};
 
@@ -1352,225 +111,380 @@ namespace jitasm
             template<> struct Opcode$< I_CMP > :
                 Switch
                 <
-                /**/ Opcode < I_CMP, 0x0000003A, Gb_Eb < R, R >, OSb >,
-                /**/ Opcode < I_CMP, 0x0000003B, Gw_Ew < R, R >, OSw >,
-                /**/ Opcode < I_CMP, 0x0000003B, Gd_Ed < R, R >, OSd >,
-                /**/ Opcode < I_CMP, 0x0000003B, Gq_Eq < R, R >, OSq >,
-                /**/ Opcode < I_CMP, 0x00000038, Eb_Gb < R, R >, OSb >,
-                /**/ Opcode < I_CMP, 0x00000039, Ew_Gw < R, R >, OSw >,
-                /**/ Opcode < I_CMP, 0x00000039, Ed_Gd < R, R >, OSd >,
-                /**/ Opcode < I_CMP, 0x00000039, Eq_Gq < R, R >, OSq >,
-                /**/ Opcode < I_CMP, 0x0000003C, AL_Ib < R > >,
-                /**/ Opcode < I_CMP, 0x00000080, Eb_Ib < R >, OSb, Group1 <7> >,
-                /**/ Opcode < I_CMP, 0x00000083, Ew_Ib < R >, OSw, Group1 <7> >,
-                /**/ Opcode < I_CMP, 0x00000083, Ed_Ib < R >, OSd, Group1 <7> >,
-                /**/ Opcode < I_CMP, 0x00000083, Eq_Ib < R >, OSq, Group1 <7> >,
-                /**/ Opcode < I_CMP, 0x0000003D, AX_Iw < R >, OSw >,
-                /**/ Opcode < I_CMP, 0x0000003D, EAX_Id < R >, OSd >,
-                /**/ Opcode < I_CMP, 0x0000003D, RAX_Id < R >, OSq >,
-                /**/ Opcode < I_CMP, 0x00000081, Ew_Iw < R >, OSw, Group1 <7> >,
-                /**/ Opcode < I_CMP, 0x00000081, Ed_Id < R >, OSd, Group1 <7> >,
-                /**/ Opcode < I_CMP, 0x00000081, Eq_Id < R >, OSq, Group1 <7> >
+                /**/ Opcode < I_CMP, 0x0000003A, Gb_Eb  < R, R >, OSb             >,
+                /**/ Opcode < I_CMP, 0x0000003B, Gw_Ew  < R, R >, OSw             >,
+                /**/ Opcode < I_CMP, 0x0000003B, Gd_Ed  < R, R >, OSd             >,
+                /**/ Opcode < I_CMP, 0x0000003B, Gq_Eq  < R, R >, OSq             >,
+                /**/ Opcode < I_CMP, 0x00000038, Eb_Gb  < R, R >, OSb             >,
+                /**/ Opcode < I_CMP, 0x00000039, Ew_Gw  < R, R >, OSw             >,
+                /**/ Opcode < I_CMP, 0x00000039, Ed_Gd  < R, R >, OSd             >,
+                /**/ Opcode < I_CMP, 0x00000039, Eq_Gq  < R, R >, OSq             >,
+                /**/ Opcode < I_CMP, 0x0000003C, AL_Ib  < R    >                  >,
+                /**/ Opcode < I_CMP, 0x00000080, Eb_Ib  < R    >, OSb, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x00000083, Ew_Ib  < R    >, OSw, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x00000083, Ed_Ib  < R    >, OSd, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x00000083, Eq_Ib  < R    >, OSq, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x0000003D, AX_Iw  < R    >, OSw             >,
+                /**/ Opcode < I_CMP, 0x0000003D, EAX_Id < R    >, OSd             >,
+                /**/ Opcode < I_CMP, 0x0000003D, RAX_Id < R    >, OSq             >,
+                /**/ Opcode < I_CMP, 0x00000081, Ew_Iw  < R    >, OSw, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x00000081, Ed_Id  < R    >, OSd, Group1 <7> >,
+                /**/ Opcode < I_CMP, 0x00000081, Eq_Id  < R    >, OSq, Group1 <7> >
                 > {};
 
-            template<> struct Opcode$< I_DAA > : Opcode < I_DAA, 0x00000027, Gw < RW >, DummyReg< 0, RAX >, i64 > {};
+            template<> struct Opcode$< I_CMPS  > :
+                Switch
+                <
+                /**/ Opcode < I_CMPS, 0x000000A6, Xb_Yb  < R, R >, OSb >,
+                /**/ Opcode < I_CMPS, 0x000000A7, Xw_Yw  < R, R >, OSw >,
+                /**/ Opcode < I_CMPS, 0x000000A7, Xd_Yd  < R, R >, OSd >,
+                /**/ Opcode < I_CMPS, 0x000000A7, Xq_Yq  < R, R >, OSq >
+                > {};
 
-            template<> struct Opcode$< I_DAS > : Opcode < I_DAS, 0x0000002F, Gw < RW >, DummyReg< 0, RAX >, i64 >{};
+            template<> struct Opcode$< I_CWD > : Opcode < I_CWD, 0x00000099, Gw_Gw < RW, W >, DummyRw< 0, AX >, DummyRw< 1, DX >, OSw > {};
+
+            template<> struct Opcode$< I_DAA > : Opcode < I_DAA, 0x00000027, Gw < RW >, DummyRw< 0, AX >, i64 > {};
+
+            template<> struct Opcode$< I_DAS > : Opcode < I_DAS, 0x0000002F, Gw < RW >, DummyRw< 0, AX >, i64 > {};
 
             template<> struct Opcode$< I_DEC > :
                 Switch
                 <
-                /**/ Opcode < I_DEC, 0x00000048, Gw < RW >, OSw, i64 >,
-                /**/ Opcode < I_DEC, 0x00000048, Gd < RW >, OSd, i64 >,
+                /**/ Opcode < I_DEC, 0x00000048, Zw < RW >, OSw, i64 >,
+                /**/ Opcode < I_DEC, 0x00000048, Zd < RW >, OSd, i64 >,
                 /**/ Opcode < I_DEC, 0x000000FE, Eb < RW >, OSb, Group4< 1 > >,
                 /**/ Opcode < I_DEC, 0x000000FF, Ew < RW >, OSw, Group5< 1 > >,
                 /**/ Opcode < I_DEC, 0x000000FF, Ed < RW >, OSd, Group5< 1 > >,
                 /**/ Opcode < I_DEC, 0x000000FF, Eq < RW >, OSq, Group5< 1 > >
                 > {};
 
+            template<> struct Opcode$< I_DIV > :
+                Switch
+                <
+                /**/ Opcode < I_DIV, 0x000000F6, Gw_Eb    < RW,     R >, DummyRw< 0, AX  >,                    OSb, Group3< 6 > >,
+                /**/ Opcode < I_DIV, 0x000000F7, Gw_Gw_Ew < RW, RW, R >, DummyRw< 0, AX  >, DummyRw< 2, DX  >, OSw, Group3< 6 > >,
+                /**/ Opcode < I_DIV, 0x000000F7, Gd_Gd_Ed < RW, RW, R >, DummyRd< 0, EAX >, DummyRd< 2, EDX >, OSd, Group3< 6 > >,
+                /**/ Opcode < I_DIV, 0x000000F7, Gq_Gq_Eq < RW, RW, R >, DummyRq< 0, RAX >, DummyRq< 2, RDX >, OSq, Group3< 6 > >
+                > {};
+
+            template<> struct Opcode$< I_HLT > : Opcode < I_HLT, 0x000000F4, None > {};
+
+            template<> struct Opcode$< I_IDIV > :
+                Switch
+                <
+                /**/ Opcode < I_IDIV, 0x000000F6, Gw_Eb    < RW,     R >, DummyRw< 0, AX  >,                    OSb, Group3< 7 > >,
+                /**/ Opcode < I_IDIV, 0x000000F7, Gw_Gw_Ew < RW, RW, R >, DummyRw< 0, AX  >, DummyRw< 2, DX  >, OSw, Group3< 7 > >,
+                /**/ Opcode < I_IDIV, 0x000000F7, Gd_Gd_Ed < RW, RW, R >, DummyRd< 0, EAX >, DummyRd< 2, EDX >, OSd, Group3< 7 > >,
+                /**/ Opcode < I_IDIV, 0x000000F7, Gq_Gq_Eq < RW, RW, R >, DummyRq< 0, RAX >, DummyRq< 2, RDX >, OSq, Group3< 7 > >
+                > {};
+
+            template<> struct Opcode$< I_IMUL > :
+                Switch
+                <
+                /**/ Opcode < I_IMUL, 0x000000F6, Gw_Eb    < RW,     R >, DummyRw< 0, AX  >,                    OSb, Group3< 5 > >,
+                /**/ Opcode < I_IMUL, 0x000000F7, Gw_Gw_Ew < RW, RW, R >, DummyRw< 0, AX  >, DummyRw< 2, DX  >, OSw, Group3< 5 > >,
+                /**/ Opcode < I_IMUL, 0x000000F7, Gd_Gd_Ed < RW, RW, R >, DummyRd< 0, EAX >, DummyRd< 2, EDX >, OSd, Group3< 5 > >,
+                /**/ Opcode < I_IMUL, 0x000000F7, Gq_Gq_Eq < RW, RW, R >, DummyRq< 0, RAX >, DummyRq< 2, RDX >, OSq, Group3< 5 > >,
+                /**/ Opcode < I_IMUL, 0x00000FAF, Gw_Ew    < RW,     R >,                                       OSw              >,
+                /**/ Opcode < I_IMUL, 0x00000FAF, Gd_Ed    < RW,     R >,                                       OSd              >,
+                /**/ Opcode < I_IMUL, 0x00000FAF, Gq_Eq    < RW,     R >,                                       OSq              >,
+                /**/ Opcode < I_IMUL, 0x0000006B, Gw_Ew_Ib < RW,     R >,                                       OSw              >,
+                /**/ Opcode < I_IMUL, 0x0000006B, Gd_Ed_Ib < RW,     R >,                                       OSd              >,
+                /**/ Opcode < I_IMUL, 0x0000006B, Gq_Eq_Ib < RW,     R >,                                       OSq              >,
+                /**/ Opcode < I_IMUL, 0x00000069, Gw_Ew_Iw < RW,     R >,                                       OSw              >,
+                /**/ Opcode < I_IMUL, 0x00000069, Gd_Ed_Id < RW,     R >,                                       OSd              >,
+                /**/ Opcode < I_IMUL, 0x00000069, Gq_Eq_Id < RW,     R >,                                       OSq              >
+                > {};
+
+            template<> struct Opcode$< I_IN > :
+                Switch
+                <
+                /**/ Opcode < I_IN, 0x000000E4, Gb_Ib < W    >, DummyRb< 0, AL  >,                    OSb >,
+                /**/ Opcode < I_IN, 0x000000E5, Gw_Ib < W    >, DummyRw< 0, AX  >,                    OSw >,
+                /**/ Opcode < I_IN, 0x000000E5, Gd_Ib < W    >, DummyRd< 0, EAX >,                    OSd >,
+                /**/ Opcode < I_IN, 0x000000EC, Gb_Gw < W, R >, DummyRb< 0, AL  >, DummyRw< 1, DX  >, OSb >,
+                /**/ Opcode < I_IN, 0x000000ED, Gw_Gw < W, R >, DummyRw< 0, AX  >, DummyRw< 1, DX  >, OSw >,
+                /**/ Opcode < I_IN, 0x000000ED, Gd_Gw < W, R >, DummyRd< 0, EAX >, DummyRw< 1, DX  >, OSd >
+                > {};
+
+            template<> struct Opcode$< I_INC > :
+                Switch
+                <
+                /**/ Opcode < I_INC, 0x00000040, Zw < RW >, OSw, i64 >,
+                /**/ Opcode < I_INC, 0x00000040, Zd < RW >, OSd, i64 >,
+                /**/ Opcode < I_INC, 0x000000FE, Eb < RW >, OSb, Group4< 0 > >,
+                /**/ Opcode < I_INC, 0x000000FF, Ew < RW >, OSw, Group5< 0 > >,
+                /**/ Opcode < I_INC, 0x000000FF, Ed < RW >, OSd, Group5< 0 > >,
+                /**/ Opcode < I_INC, 0x000000FF, Eq < RW >, OSq, Group5< 0 > >
+                > {};
+
+            template<> struct Opcode$< I_INT > : Opcode < I_INT, 0x000000CD, Ib > {};
+            
+            template<> struct Opcode$< I_INT3 > : Opcode < I_INT3, 0x000000CC, None > {};
+
+            template<> struct Opcode$< I_INTO > : Opcode < I_INTO, 0x000000CE, None > {};
+
             template<> struct Opcode$< I_OR  > :
                 Switch
                 <
-                /**/ Opcode < I_OR, 0x0000000A, Gb_Eb < RW, R >, OSb >,
-                /**/ Opcode < I_OR, 0x0000000B, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_OR, 0x0000000B, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_OR, 0x0000000B, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_OR, 0x00000008, Eb_Gb < RW, R >, OSb >,
-                /**/ Opcode < I_OR, 0x00000009, Ew_Gw < RW, R >, OSw >,
-                /**/ Opcode < I_OR, 0x00000009, Ed_Gd < RW, R >, OSd >,
-                /**/ Opcode < I_OR, 0x00000009, Eq_Gq < RW, R >, OSq >,
-                /**/ Opcode < I_OR, 0x0000000C, AL_Ib < RW > >,
-                /**/ Opcode < I_OR, 0x00000080, Eb_Ib < RW >, OSb, Group1 <1> >,
-                /**/ Opcode < I_OR, 0x00000083, Ew_Ib < RW >, OSw, Group1 <1> >,
-                /**/ Opcode < I_OR, 0x00000083, Ed_Ib < RW >, OSd, Group1 <1> >,
-                /**/ Opcode < I_OR, 0x00000083, Eq_Ib < RW >, OSq, Group1 <1> >,
-                /**/ Opcode < I_OR, 0x0000000D, AX_Iw < RW >, OSw >,
-                /**/ Opcode < I_OR, 0x0000000D, EAX_Id < RW >, OSd >,
-                /**/ Opcode < I_OR, 0x0000000D, RAX_Id < RW >, OSq >,
-                /**/ Opcode < I_OR, 0x00000081, Ew_Iw < RW >, OSw, Group1 <1> >,
-                /**/ Opcode < I_OR, 0x00000081, Ed_Id < RW >, OSd, Group1 <1> >,
-                /**/ Opcode < I_OR, 0x00000081, Eq_Id < RW >, OSq, Group1 <1> >
+                /**/ Opcode < I_OR, 0x0000000A, Gb_Eb  < RW, R >, OSb             >,
+                /**/ Opcode < I_OR, 0x0000000B, Gw_Ew  < RW, R >, OSw             >,
+                /**/ Opcode < I_OR, 0x0000000B, Gd_Ed  < RW, R >, OSd             >,
+                /**/ Opcode < I_OR, 0x0000000B, Gq_Eq  < RW, R >, OSq             >,
+                /**/ Opcode < I_OR, 0x00000008, Eb_Gb  < RW, R >, OSb             >,
+                /**/ Opcode < I_OR, 0x00000009, Ew_Gw  < RW, R >, OSw             >,
+                /**/ Opcode < I_OR, 0x00000009, Ed_Gd  < RW, R >, OSd             >,
+                /**/ Opcode < I_OR, 0x00000009, Eq_Gq  < RW, R >, OSq             >,
+                /**/ Opcode < I_OR, 0x0000000C, AL_Ib  < RW    >                  >,
+                /**/ Opcode < I_OR, 0x00000080, Eb_Ib  < RW    >, OSb, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x00000083, Ew_Ib  < RW    >, OSw, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x00000083, Ed_Ib  < RW    >, OSd, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x00000083, Eq_Ib  < RW    >, OSq, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x0000000D, AX_Iw  < RW    >, OSw             >,
+                /**/ Opcode < I_OR, 0x0000000D, EAX_Id < RW    >, OSd             >,
+                /**/ Opcode < I_OR, 0x0000000D, RAX_Id < RW    >, OSq             >,
+                /**/ Opcode < I_OR, 0x00000081, Ew_Iw  < RW    >, OSw, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x00000081, Ed_Id  < RW    >, OSd, Group1 <1> >,
+                /**/ Opcode < I_OR, 0x00000081, Eq_Id  < RW    >, OSq, Group1 <1> >
+                > {};
+
+            template<> struct Opcode$< I_OUT > :
+                Switch
+                <
+                /**/ Opcode < I_OUT, 0x000000E6, Ib_Gb < R    >, DummyRb< 0, AL  >,                    OSb >,
+                /**/ Opcode < I_OUT, 0x000000E7, Ib_Gw < R    >, DummyRw< 0, AX  >,                    OSw >,
+                /**/ Opcode < I_OUT, 0x000000E7, Ib_Gd < R    >, DummyRd< 0, EAX >,                    OSd >,
+                /**/ Opcode < I_OUT, 0x000000EE, Gw_Gb < R, R >, DummyRb< 0, AL  >, DummyRw< 1, DX  >, OSb >,
+                /**/ Opcode < I_OUT, 0x000000EF, Gw_Gw < R, R >, DummyRw< 0, AX  >, DummyRw< 1, DX  >, OSw >,
+                /**/ Opcode < I_OUT, 0x000000EF, Gw_Gd < R, R >, DummyRd< 0, EAX >, DummyRw< 1, DX  >, OSd >
                 > {};
 
             template<> struct Opcode$< I_SBB > :
                 Switch
                 <
-                /**/ Opcode < I_SBB, 0x0000001A, Gb_Eb < RW, R >, OSb >,
-                /**/ Opcode < I_SBB, 0x0000001B, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_SBB, 0x0000001B, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_SBB, 0x0000001B, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_SBB, 0x00000018, Eb_Gb < RW, R >, OSb >,
-                /**/ Opcode < I_SBB, 0x00000019, Ew_Gw < RW, R >, OSw >,
-                /**/ Opcode < I_SBB, 0x00000019, Ed_Gd < RW, R >, OSd >,
-                /**/ Opcode < I_SBB, 0x00000019, Eq_Gq < RW, R >, OSq >,
-                /**/ Opcode < I_SBB, 0x0000001C, AL_Ib < RW > >,
-                /**/ Opcode < I_SBB, 0x00000080, Eb_Ib < RW >, OSb, Group1 <3> >,
-                /**/ Opcode < I_SBB, 0x00000083, Ew_Ib < RW >, OSw, Group1 <3> >,
-                /**/ Opcode < I_SBB, 0x00000083, Ed_Ib < RW >, OSd, Group1 <3> >,
-                /**/ Opcode < I_SBB, 0x00000083, Eq_Ib < RW >, OSq, Group1 <3> >,
-                /**/ Opcode < I_SBB, 0x0000001D, AX_Iw < RW >, OSw >,
-                /**/ Opcode < I_SBB, 0x0000001D, EAX_Id < RW >, OSd >,
-                /**/ Opcode < I_SBB, 0x0000001D, RAX_Id < RW >, OSd >,
-                /**/ Opcode < I_SBB, 0x00000081, Ew_Iw < RW >, OSw, Group1 <3> >,
-                /**/ Opcode < I_SBB, 0x00000081, Ed_Id < RW >, OSd, Group1 <3> >,
-                /**/ Opcode < I_SBB, 0x00000081, Eq_Id < RW >, OSq, Group1 <3> >
+                /**/ Opcode < I_SBB, 0x0000001A, Gb_Eb  < RW, R >, OSb             >,
+                /**/ Opcode < I_SBB, 0x0000001B, Gw_Ew  < RW, R >, OSw             >,
+                /**/ Opcode < I_SBB, 0x0000001B, Gd_Ed  < RW, R >, OSd             >,
+                /**/ Opcode < I_SBB, 0x0000001B, Gq_Eq  < RW, R >, OSq             >,
+                /**/ Opcode < I_SBB, 0x00000018, Eb_Gb  < RW, R >, OSb             >,
+                /**/ Opcode < I_SBB, 0x00000019, Ew_Gw  < RW, R >, OSw             >,
+                /**/ Opcode < I_SBB, 0x00000019, Ed_Gd  < RW, R >, OSd             >,
+                /**/ Opcode < I_SBB, 0x00000019, Eq_Gq  < RW, R >, OSq             >,
+                /**/ Opcode < I_SBB, 0x0000001C, AL_Ib  < RW    >                  >,
+                /**/ Opcode < I_SBB, 0x00000080, Eb_Ib  < RW    >, OSb, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x00000083, Ew_Ib  < RW    >, OSw, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x00000083, Ed_Ib  < RW    >, OSd, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x00000083, Eq_Ib  < RW    >, OSq, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x0000001D, AX_Iw  < RW    >, OSw             >,
+                /**/ Opcode < I_SBB, 0x0000001D, EAX_Id < RW    >, OSd             >,
+                /**/ Opcode < I_SBB, 0x0000001D, RAX_Id < RW    >, OSq             >,
+                /**/ Opcode < I_SBB, 0x00000081, Ew_Iw  < RW    >, OSw, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x00000081, Ed_Id  < RW    >, OSd, Group1 <3> >,
+                /**/ Opcode < I_SBB, 0x00000081, Eq_Id  < RW    >, OSq, Group1 <3> >
                 > {};
 
             template<> struct Opcode$< I_SUB > :
                 Switch
                 <
-                /**/ Opcode < I_SUB, 0x0000002A, Gb_Eb < RW, R >, OSb >,
-                /**/ Opcode < I_SUB, 0x0000002B, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_SUB, 0x0000002B, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_SUB, 0x0000002B, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_SUB, 0x00000028, Eb_Gb < RW, R >, OSb >,
-                /**/ Opcode < I_SUB, 0x00000029, Ew_Gw < RW, R >, OSw >,
-                /**/ Opcode < I_SUB, 0x00000029, Ed_Gd < RW, R >, OSd >,
-                /**/ Opcode < I_SUB, 0x00000029, Eq_Gq < RW, R >, OSq >,
-                /**/ Opcode < I_SUB, 0x0000002C, AL_Ib < RW > >,
-                /**/ Opcode < I_SUB, 0x00000080, Eb_Ib < RW >, OSb, Group1 <5> >,
-                /**/ Opcode < I_SUB, 0x00000083, Ew_Ib < RW >, OSw, Group1 <5> >,
-                /**/ Opcode < I_SUB, 0x00000083, Ed_Ib < RW >, OSd, Group1 <5> >,
-                /**/ Opcode < I_SUB, 0x00000083, Eq_Ib < RW >, OSq, Group1 <5> >,
-                /**/ Opcode < I_SUB, 0x0000002D, AX_Iw < RW >, OSw >,
-                /**/ Opcode < I_SUB, 0x0000002D, EAX_Id < RW >, OSd >,
-                /**/ Opcode < I_SUB, 0x0000002D, RAX_Id < RW >, OSq >,
-                /**/ Opcode < I_SUB, 0x00000081, Ew_Iw < RW >, OSw, Group1 <5> >,
-                /**/ Opcode < I_SUB, 0x00000081, Ed_Id < RW >, OSd, Group1 <5> >,
-                /**/ Opcode < I_SUB, 0x00000081, Eq_Id < RW >, OSq, Group1 <5> >
+                /**/ Opcode < I_SUB, 0x0000002A, Gb_Eb  < RW, R >, OSb             >,
+                /**/ Opcode < I_SUB, 0x0000002B, Gw_Ew  < RW, R >, OSw             >,
+                /**/ Opcode < I_SUB, 0x0000002B, Gd_Ed  < RW, R >, OSd             >,
+                /**/ Opcode < I_SUB, 0x0000002B, Gq_Eq  < RW, R >, OSq             >,
+                /**/ Opcode < I_SUB, 0x00000028, Eb_Gb  < RW, R >, OSb             >,
+                /**/ Opcode < I_SUB, 0x00000029, Ew_Gw  < RW, R >, OSw             >,
+                /**/ Opcode < I_SUB, 0x00000029, Ed_Gd  < RW, R >, OSd             >,
+                /**/ Opcode < I_SUB, 0x00000029, Eq_Gq  < RW, R >, OSq             >,
+                /**/ Opcode < I_SUB, 0x0000002C, AL_Ib  < RW    >                  >,
+                /**/ Opcode < I_SUB, 0x00000080, Eb_Ib  < RW    >, OSb, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x00000083, Ew_Ib  < RW    >, OSw, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x00000083, Ed_Ib  < RW    >, OSd, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x00000083, Eq_Ib  < RW    >, OSq, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x0000002D, AX_Iw  < RW    >, OSw             >,
+                /**/ Opcode < I_SUB, 0x0000002D, EAX_Id < RW    >, OSd             >,
+                /**/ Opcode < I_SUB, 0x0000002D, RAX_Id < RW    >, OSq             >,
+                /**/ Opcode < I_SUB, 0x00000081, Ew_Iw  < RW    >, OSw, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x00000081, Ed_Id  < RW    >, OSd, Group1 <5> >,
+                /**/ Opcode < I_SUB, 0x00000081, Eq_Id  < RW    >, OSq, Group1 <5> >
                 > {};
 
             template<> struct Opcode$< I_XOR > :
                 Switch
                 <
-                /**/ Opcode < I_XOR, 0x00000032, Gb_Eb < RW, R >, OSb >,
-                /**/ Opcode < I_XOR, 0x00000033, Gw_Ew < RW, R >, OSw >,
-                /**/ Opcode < I_XOR, 0x00000033, Gd_Ed < RW, R >, OSd >,
-                /**/ Opcode < I_XOR, 0x00000033, Gq_Eq < RW, R >, OSq >,
-                /**/ Opcode < I_XOR, 0x00000030, Eb_Gb < RW, R >, OSb >,
-                /**/ Opcode < I_XOR, 0x00000031, Ew_Gw < RW, R >, OSw >,
-                /**/ Opcode < I_XOR, 0x00000031, Ed_Gd < RW, R >, OSd >,
-                /**/ Opcode < I_XOR, 0x00000031, Eq_Gq < RW, R >, OSq >,
-                /**/ Opcode < I_XOR, 0x00000034, AL_Ib < RW > >,
-                /**/ Opcode < I_XOR, 0x00000080, Eb_Ib < RW >, OSb, Group1 <6> >,
-                /**/ Opcode < I_XOR, 0x00000083, Ew_Ib < RW >, OSw, Group1 <6> >,
-                /**/ Opcode < I_XOR, 0x00000083, Ed_Ib < RW >, OSd, Group1 <6> >,
-                /**/ Opcode < I_XOR, 0x00000083, Eq_Ib < RW >, OSq, Group1 <6> >,
-                /**/ Opcode < I_XOR, 0x00000035, AX_Iw < RW >, OSw >,
-                /**/ Opcode < I_XOR, 0x00000035, EAX_Id < RW >, OSd >,
-                /**/ Opcode < I_XOR, 0x00000035, RAX_Id < RW >, OSq >,
-                /**/ Opcode < I_XOR, 0x00000081, Ew_Iw < RW >, OSw, Group1 <6> >,
-                /**/ Opcode < I_XOR, 0x00000081, Ed_Id < RW >, OSd, Group1 <6> >,
-                /**/ Opcode < I_XOR, 0x00000081, Eq_Id < RW >, OSq, Group1 <6> >
+                /**/ Opcode < I_XOR, 0x00000032, Gb_Eb  < RW, R >, OSb             >,
+                /**/ Opcode < I_XOR, 0x00000033, Gw_Ew  < RW, R >, OSw             >,
+                /**/ Opcode < I_XOR, 0x00000033, Gd_Ed  < RW, R >, OSd             >,
+                /**/ Opcode < I_XOR, 0x00000033, Gq_Eq  < RW, R >, OSq             >,
+                /**/ Opcode < I_XOR, 0x00000030, Eb_Gb  < RW, R >, OSb             >,
+                /**/ Opcode < I_XOR, 0x00000031, Ew_Gw  < RW, R >, OSw             >,
+                /**/ Opcode < I_XOR, 0x00000031, Ed_Gd  < RW, R >, OSd             >,
+                /**/ Opcode < I_XOR, 0x00000031, Eq_Gq  < RW, R >, OSq             >,
+                /**/ Opcode < I_XOR, 0x00000034, AL_Ib  < RW    >                  >,
+                /**/ Opcode < I_XOR, 0x00000080, Eb_Ib  < RW    >, OSb, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000083, Ew_Ib  < RW    >, OSw, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000083, Ed_Ib  < RW    >, OSd, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000083, Eq_Ib  < RW    >, OSq, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000035, AX_Iw  < RW    >, OSw             >,
+                /**/ Opcode < I_XOR, 0x00000035, EAX_Id < RW    >, OSd             >,
+                /**/ Opcode < I_XOR, 0x00000035, RAX_Id < RW    >, OSq             >,
+                /**/ Opcode < I_XOR, 0x00000081, Ew_Iw  < RW    >, OSw, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000081, Ed_Id  < RW    >, OSd, Group1 <6> >,
+                /**/ Opcode < I_XOR, 0x00000081, Eq_Id  < RW    >, OSq, Group1 <6> >
                 > {};
-
-            //template<> struct Opcode$< I_CWD > : Opcode < I_CWD, 0x000000098, Implicit_rAX < RW > > {};
 
             // Group 80188+
             template<> struct Opcode$< I_BOUND > :
-            Switch
+                Switch
                 <
                 /**/ Opcode < I_BOUND, 0x00000062, Gw_Md < R, R >, OSw, i64 >,
                 /**/ Opcode < I_BOUND, 0x00000062, Gd_Mq < R, R >, OSd, i64 >
                 > {};
 
-#if 0
+            template<> struct Opcode$< I_ENTER > :
+                Switch
+                <
+                /**/ Opcode < I_ENTER, 0x000000C8, Gw_Iw_Ib < RW >, DummyRw< 0, BP  >, DummyRw< -1, SP , RW >, OSw >,
+                /**/ Opcode < I_ENTER, 0x000000C8, Gd_Iw_Ib < RW >, DummyRd< 0, EBP >, DummyRd< -1, ESP, RW >, OSd >,
+                /**/ Opcode < I_ENTER, 0x000000C8, Gd_Iw_Ib < RW >, DummyRq< 0, RBP >, DummyRq< -1, RSP, RW >, OSq >
+                > {};
+
+            template<> struct Opcode$< I_INS > :
+                Switch
+                <
+                /**/ Opcode < I_INS, 0x0000006C, Yb_Gw < W, R >, DummyRw< 1, DX  >, OSb >,
+                /**/ Opcode < I_INS, 0x0000006D, Yw_Gw < W, R >, DummyRw< 1, DX  >, OSw >,
+                /**/ Opcode < I_INS, 0x0000006D, Yd_Gw < W, R >, DummyRw< 1, DX  >, OSd >
+                > {};
+
+            template<> struct Opcode$< I_LEAVE > :
+                Switch
+                <
+                /**/ Opcode < I_LEAVE, 0x000000C9, Gw < RW >, DummyRw< 0, BP  >, DummyRw< -1, SP , W >, OSw >,
+                /**/ Opcode < I_LEAVE, 0x000000C9, Gd < RW >, DummyRd< 0, EBP >, DummyRd< -1, ESP, W >, OSd >,
+                /**/ Opcode < I_LEAVE, 0x000000C9, Gd < RW >, DummyRq< 0, RBP >, DummyRq< -1, RSP, W >, OSq >
+                > {};
+
+            template<> struct Opcode$< I_OUTS > :
+                Switch
+                <
+                /**/ Opcode < I_OUTS, 0x0000006E, Gw_Xb < R, R >, DummyRw< 0, DX  >, OSb >,
+                /**/ Opcode < I_OUTS, 0x0000006F, Gw_Xw < R, R >, DummyRw< 0, DX  >, OSw >,
+                /**/ Opcode < I_OUTS, 0x0000006F, Gw_Xd < R, R >, DummyRw< 0, DX  >, OSd >
+                > {};
+
             // Group 80286+
-            template<> struct Opcode$< I_ARPL > : Opcode < I_ARPL, 0x00000063, Ew_Gw < W, R > >{};
+            template<> struct Opcode$< I_ARPL > : Opcode < I_ARPL, 0x00000063, Ew_Gw < W, R > > {};
 
             template<> struct Opcode$< I_CLTS > : Opcode < I_CLTS, 0x000000F06, None > {};
 
             // Group 80386+
-            template<> struct Opcode$< I_BSF > : Opcode < I_BSF, 0x00000FBC, Gv_Ev < W, R >, OSv > {};
+            template<> struct Opcode$< I_BSF > :
+                Switch
+                <
+                /**/ Opcode < I_BSF, 0x00000FBC, Gw_Ew < W, R >, OSw >,
+                /**/ Opcode < I_BSF, 0x00000FBC, Gd_Ed < W, R >, OSd >,
+                /**/ Opcode < I_BSF, 0x00000FBC, Gq_Eq < W, R >, OSq >
+                > {};
 
-            template<> struct Opcode$< I_BSR > : Opcode < I_BSR, 0x00000FBD, Gv_Ev < W, R >, OSv > {};
+            template<> struct Opcode$< I_BSR > :
+                Switch
+                <
+                /**/ Opcode < I_BSR, 0x00000FBD, Gw_Ew < W, R >, OSw >,
+                /**/ Opcode < I_BSR, 0x00000FBD, Gd_Ed < W, R >, OSd >,
+                /**/ Opcode < I_BSR, 0x00000FBD, Gq_Eq < W, R >, OSq >
+                > {};
 
             template<> struct Opcode$< I_BT > :
                 Switch
                 <
-                /**/ Opcode < I_BT, 0x00000FA3, Ev_Gv < W, R >, OSv >,
-                /**/ Opcode < I_BT, 0x00000FBA, Ev_Ib < W >, OSv, Group8 <4> >
+                /**/ Opcode < I_BT, 0x00000FA3, Ew_Gw < W, R >, OSw >,
+                /**/ Opcode < I_BT, 0x00000FA3, Ed_Gd < W, R >, OSd >,
+                /**/ Opcode < I_BT, 0x00000FA3, Eq_Gq < W, R >, OSq >,
+                /**/ Opcode < I_BT, 0x00000FBA, Ew_Ib < W >, OSw, Group8 <4> >,
+                /**/ Opcode < I_BT, 0x00000FBA, Ed_Ib < W >, OSd, Group8 <4> >,
+                /**/ Opcode < I_BT, 0x00000FBA, Eq_Ib < W >, OSq, Group8 <4> >
                 > {};
 
             template<> struct Opcode$< I_BTC > :
                 Switch
                 <
-                /**/ Opcode < I_BTC, 0x00000FBB, Ev_Gv < RW, R >, OSv >,
-                /**/ Opcode < I_BTC, 0x00000FBA, Ev_Ib < RW >, OSv, Group8 <7> >
+                /**/ Opcode < I_BTC, 0x00000FBB, Ew_Gw < RW, R >, OSw >,
+                /**/ Opcode < I_BTC, 0x00000FBB, Ed_Gd < RW, R >, OSd >,
+                /**/ Opcode < I_BTC, 0x00000FBB, Eq_Gq < RW, R >, OSq >,
+                /**/ Opcode < I_BTC, 0x00000FBA, Ew_Ib < RW >, OSw, Group8 <7> >,
+                /**/ Opcode < I_BTC, 0x00000FBA, Ed_Ib < RW >, OSd, Group8 <7> >,
+                /**/ Opcode < I_BTC, 0x00000FBA, Eq_Ib < RW >, OSq, Group8 <7> >
                 > {};
 
             template<> struct Opcode$< I_BTR > :
                 Switch
                 <
-                /**/ Opcode < I_BTR, 0x00000FB3, Ev_Gv < RW, R >, OSv >,
-                /**/ Opcode < I_BTR, 0x00000FBA, Ev_Ib < RW >, OSv, Group8 <6> >
+                /**/ Opcode < I_BTR, 0x00000FB3, Ew_Gw < RW, R >, OSw >,
+                /**/ Opcode < I_BTR, 0x00000FB3, Ed_Gd < RW, R >, OSd >,
+                /**/ Opcode < I_BTR, 0x00000FB3, Eq_Gq < RW, R >, OSq >,
+                /**/ Opcode < I_BTR, 0x00000FBA, Ew_Ib < RW >, OSw, Group8 <6> >,
+                /**/ Opcode < I_BTR, 0x00000FBA, Ed_Ib < RW >, OSd, Group8 <6> >,
+                /**/ Opcode < I_BTR, 0x00000FBA, Eq_Ib < RW >, OSq, Group8 <6> >
                 > {};
 
             template<> struct Opcode$< I_BTS > :
                 Switch
                 <
-                /**/ Opcode < I_BTS, 0x00000FAB, Ev_Gv < RW, R >, OSv >,
-                /**/ Opcode < I_BTS, 0x00000FBA, Ev_Ib < RW >, OSv, Group8 <5> >
+                /**/ Opcode < I_BTS, 0x00000FAB, Ew_Gw < RW, R >, OSw >,
+                /**/ Opcode < I_BTS, 0x00000FAB, Ed_Gd < RW, R >, OSd >,
+                /**/ Opcode < I_BTS, 0x00000FAB, Eq_Gq < RW, R >, OSq >,
+                /**/ Opcode < I_BTS, 0x00000FBA, Ew_Ib < RW >, OSw, Group8 <5> >,
+                /**/ Opcode < I_BTS, 0x00000FBA, Ed_Ib < RW >, OSd, Group8 <5> >,
+                /**/ Opcode < I_BTS, 0x00000FBA, Eq_Ib < RW >, OSq, Group8 <5> >
                 > {};
 
-            template<> struct Opcode$< I_CDQ > : Opcode < I_CDQ, 0x000000099, Gv_Gv < W, R >, DummyReg< 0, RDX >, DummyReg< 1, RAX > >{};
+            template<> struct Opcode$< I_CDQ > : Opcode < I_CDQ, 0x000000099, Gd_Gd < RW, R >, DummyRd< 0, EDX >, DummyRd< 1, EDX > > {};
 
-            template<> struct Opcode$< I_CWDE > : Opcode < I_CWDE, 0x000000098, Gv < RW >, DummyReg< 0, RAX > >{};
+            template<> struct Opcode$< I_CQO > : Opcode < I_CQO, 0x000000099, Gq_Gq < RW, R >, DummyRd< 0, RDX >, DummyRd< 1, RDX > > {};
+
+            template<> struct Opcode$< I_CWDE > : Opcode < I_CWDE, 0x000000098, Gd < RW >, DummyRd< 0, EAX > >{};
+
+            template<> struct Opcode$< I_INT1 > : Opcode < I_INT1, 0x000000F1, None > {};
 
             // Group 80486+
-            template<> struct Opcode$< I_BSWAP > : Opcode < I_BSWAP, 0x00000FC8, Zv < RW >, OSv > {};
+            template<> struct Opcode$< I_BSWAP > :
+                Switch
+                <
+                /**/ Opcode < I_BSWAP, 0x00000FC8, Zw < RW >, OSw >,
+                /**/ Opcode < I_BSWAP, 0x00000FC8, Zd < RW >, OSd >,
+                /**/ Opcode < I_BSWAP, 0x00000FC8, Zq < RW >, OSq >
+                > {};
 
-            template<> struct Opcode$< I_CDQE > : Opcode < I_CDQE, 0x000000098, Gv < RW >, OSq, DummyReg< 0, RAX > >{};
+            template<> struct Opcode$< I_CDQE > : Opcode < I_CDQE, 0x000000098, Gq < RW >, OSq, DummyRq< 0, RAX > > {};
 
-            template<> struct Opcode$< I_CLFLUSH > : Opcode < I_CLFLUSH, 0x000000FAE, Mb< W >, Group15 <7> >{};
-            
-            template<> struct Opcode$< I_CMOVcc > : Opcode < I_CMOVcc, 0x00000F40, Gv_Ev< RW, R >, OSv > {};
+            template<> struct Opcode$< I_CLFLUSH > : Opcode < I_CLFLUSH, 0x000000FAE, Mb< RW >, Group15 <7> > {};
 
-            //template<> struct Opcode$< I_CMPS_B  > : Opcode < I_CMPS_B, 0x000000A6, Implicit_rDI_rSI < R, R > > {};
+            template<> struct Opcode$< I_CMOVcc > :
+                Switch
+                <
+                /**/ Opcode < I_CMOVcc, 0x00000F40, Gw_Ew < RW, R >, OSw >,
+                /**/ Opcode < I_CMOVcc, 0x00000F40, Gd_Ed < RW, R >, OSd >,
+                /**/ Opcode < I_CMOVcc, 0x00000F40, Gq_Eq < RW, R >, OSq >
+                > {};
 
-            //template<> struct Opcode$< I_CMPS_W  > : Opcode < I_CMPS_W, 0x000000A7, Implicit_rDI_rSI < R, R >, OSw > {};
+            template<> struct Opcode$< I_CMPXCHG > :
+                Switch
+                <
+                /**/ Opcode < I_CMPXCHG, 0x00000FB0, Gb_Eb < RW, RW >, OSb >,
+                /**/ Opcode < I_CMPXCHG, 0x00000FB1, Gw_Ew < RW, RW >, OSw >,
+                /**/ Opcode < I_CMPXCHG, 0x00000FB1, Gd_Ed < RW, RW >, OSd >,
+                /**/ Opcode < I_CMPXCHG, 0x00000FB1, Gq_Eq < RW, RW >, OSq >
+                > {};
 
-            //template<> struct Opcode$< I_CMPS_D  > : Opcode < I_CMPS_D, 0x000000A7, Implicit_rDI_rSI < R, R > > {};
+            template<> struct Opcode$< I_INVD > : Opcode < I_INVD, 0x00000F08, None > {};
 
-            //template<> struct Opcode$< I_CMPS_Q  > : Opcode < I_CMPS_Q, 0x000000A7, Implicit_rDI_rSI < R, R >, OSq > {};
+            template<> struct Opcode$< I_INVLPG > : Opcode < I_INVLPG, 0x00000F01, Mb < RW > > {};
 
-            //template<> struct Opcode$< I_CMPXCHG > :
-            //    Switch
-            //    <
-            //    /**/ Opcode < I_CMP, 0x0000003A, Gb_Eb < R, R >, OSb >,
-            //    /**/ Opcode < I_CMP, 0x0000003B, Gv_Ev < R, R >, OSv >,
-            //    /**/ Opcode < I_CMP, 0x00000038, Eb_Gb < R, R >, OSb >,
-            //    /**/ Opcode < I_CMP, 0x00000039, Ev_Gv < R, R >, OSv >,
-            //    /**/ Opcode < I_CMP, 0x0000003C, AL_Ib < R > >,
-            //    /**/ Opcode < I_CMP, 0x00000080, Eb_Ib < R >, OSb, Group1 <7> >,
-            //    /**/ Opcode < I_CMP, 0x00000083, Ev_Ib < R >, OSv, Group1 <7> >,
-            //    /**/ Opcode < I_CMP, 0x0000003D, rAX_Iz < R >, OSv >,
-            //    /**/ Opcode < I_CMP, 0x00000081, Ev_Iz < R >, OSv, Group1 <7> >
-            //    > {};
+            // Group 80586+
+            template<> struct Opcode$< I_CMPXCHG8B > : Opcode < I_CMPXCHG8B, 0x00000FC7, Gdd_Mq_Gdd < RW, RW, R >, DummyRd< 0, EAX >, DummyRd< 1, EDX >, DummyRd< 3, EBX >, DummyRd< 4, ECX >, Group9< 1 >, OSd >{};
 
-            //template<> struct Opcode$< I_CMPXCHG > : OpcodeCXU < I_CMPXCHG, 0x00000FB0, Implicit_rDI_rSI < R, R > >{};
+            template<> struct Opcode$< I_CMPXCHG16B > : Opcode < I_CMPXCHG16B, 0x00000FC7, Gqq_Mo_Gqq < RW, RW, R >, DummyRq< 0, RAX >, DummyRq< 1, RDX >, DummyRq< 3, RBX >, DummyRq< 4, RCX >, Group9< 1 >, OSq >{};
 
-
+#if 0
             // Group LZCNT
             template<> struct Opcode$< I_LZCNT > : Opcode < I_LZCNT, 0x00000FBD, Gv_Ev < W, R >, EncodingFlags < E_MANDATORY_PREFIX_F3 >, OSv >{};
 
@@ -1606,7 +520,6 @@ namespace jitasm
             case I_AAD:                 JITASM_ASSERT(encoder::Opcode$< I_AAD >::Encode(instr, is64_)); break;
             case I_AAM:                 JITASM_ASSERT(encoder::Opcode$< I_AAM >::Encode(instr, is64_)); break;
             case I_AAS:                 JITASM_ASSERT(encoder::Opcode$< I_AAS >::Encode(instr, is64_)); break;
-            case I_FABS:                JITASM_ASSERT(encoder::Opcode$< I_FABS >::Encode(instr, is64_)); break;
             case I_ADC:                 JITASM_ASSERT(encoder::Opcode$< I_ADC >::Encode(instr, is64_)); break;
             case I_ADCX:                JITASM_ASSERT(encoder::Opcode$< I_ADCX >::Encode(instr, is64_)); break;
             case I_ADD:                 JITASM_ASSERT(encoder::Opcode$< I_ADD >::Encode(instr, is64_)); break;
@@ -1616,14 +529,11 @@ namespace jitasm
             case I_ADDSS:               JITASM_ASSERT(encoder::Opcode$< I_ADDSS >::Encode(instr, is64_)); break;
             case I_ADDSUBPD:            JITASM_ASSERT(encoder::Opcode$< I_ADDSUBPD >::Encode(instr, is64_)); break;
             case I_ADDSUBPS:            JITASM_ASSERT(encoder::Opcode$< I_ADDSUBPS >::Encode(instr, is64_)); break;
-            case I_FADD:                JITASM_ASSERT(encoder::Opcode$< I_FADD >::Encode(instr, is64_)); break;
-            case I_FIADD:               JITASM_ASSERT(encoder::Opcode$< I_FIADD >::Encode(instr, is64_)); break;
-            case I_FADDP:               JITASM_ASSERT(encoder::Opcode$< I_FADDP >::Encode(instr, is64_)); break;
             case I_ADOX:                JITASM_ASSERT(encoder::Opcode$< I_ADOX >::Encode(instr, is64_)); break;
-            case I_AESDECLAST:          JITASM_ASSERT(encoder::Opcode$< I_AESDECLAST >::Encode(instr, is64_)); break;
             case I_AESDEC:              JITASM_ASSERT(encoder::Opcode$< I_AESDEC >::Encode(instr, is64_)); break;
-            case I_AESENCLAST:          JITASM_ASSERT(encoder::Opcode$< I_AESENCLAST >::Encode(instr, is64_)); break;
+            case I_AESDECLAST:          JITASM_ASSERT(encoder::Opcode$< I_AESDECLAST >::Encode(instr, is64_)); break;
             case I_AESENC:              JITASM_ASSERT(encoder::Opcode$< I_AESENC >::Encode(instr, is64_)); break;
+            case I_AESENCLAST:          JITASM_ASSERT(encoder::Opcode$< I_AESENCLAST >::Encode(instr, is64_)); break;
             case I_AESIMC:              JITASM_ASSERT(encoder::Opcode$< I_AESIMC >::Encode(instr, is64_)); break;
             case I_AESKEYGENASSIST:     JITASM_ASSERT(encoder::Opcode$< I_AESKEYGENASSIST >::Encode(instr, is64_)); break;
             case I_AND:                 JITASM_ASSERT(encoder::Opcode$< I_AND >::Encode(instr, is64_)); break;
@@ -1661,7 +571,6 @@ namespace jitasm
             case I_CBW:                 JITASM_ASSERT(encoder::Opcode$< I_CBW >::Encode(instr, is64_)); break;
             case I_CDQ:                 JITASM_ASSERT(encoder::Opcode$< I_CDQ >::Encode(instr, is64_)); break;
             case I_CDQE:                JITASM_ASSERT(encoder::Opcode$< I_CDQE >::Encode(instr, is64_)); break;
-            case I_FCHS:                JITASM_ASSERT(encoder::Opcode$< I_FCHS >::Encode(instr, is64_)); break;
             case I_CLAC:                JITASM_ASSERT(encoder::Opcode$< I_CLAC >::Encode(instr, is64_)); break;
             case I_CLC:                 JITASM_ASSERT(encoder::Opcode$< I_CLC >::Encode(instr, is64_)); break;
             case I_CLD:                 JITASM_ASSERT(encoder::Opcode$< I_CLD >::Encode(instr, is64_)); break;
@@ -1671,32 +580,30 @@ namespace jitasm
             case I_CLTS:                JITASM_ASSERT(encoder::Opcode$< I_CLTS >::Encode(instr, is64_)); break;
             case I_CMC:                 JITASM_ASSERT(encoder::Opcode$< I_CMC >::Encode(instr, is64_)); break;
             case I_CMOVcc:              JITASM_ASSERT(encoder::Opcode$< I_CMOVcc >::Encode(instr, is64_)); break;
-            case I_FCMOVcc:             JITASM_ASSERT(encoder::Opcode$< I_FCMOVcc >::Encode(instr, is64_)); break;
             case I_CMP:                 JITASM_ASSERT(encoder::Opcode$< I_CMP >::Encode(instr, is64_)); break;
-            case I_CMPS:                JITASM_ASSERT(encoder::Opcode$< I_CMPS >::Encode(instr, is64_)); break;
             case I_CMPPD:               JITASM_ASSERT(encoder::Opcode$< I_CMPPD >::Encode(instr, is64_)); break;
             case I_CMPPS:               JITASM_ASSERT(encoder::Opcode$< I_CMPPS >::Encode(instr, is64_)); break;
+            case I_CMPS:                JITASM_ASSERT(encoder::Opcode$< I_CMPS >::Encode(instr, is64_)); break;
             case I_CMPSD:               JITASM_ASSERT(encoder::Opcode$< I_CMPSD >::Encode(instr, is64_)); break;
             case I_CMPSS:               JITASM_ASSERT(encoder::Opcode$< I_CMPSS >::Encode(instr, is64_)); break;
-            case I_CMPXCHG16B:          JITASM_ASSERT(encoder::Opcode$< I_CMPXCHG16B >::Encode(instr, is64_)); break;
             case I_CMPXCHG:             JITASM_ASSERT(encoder::Opcode$< I_CMPXCHG >::Encode(instr, is64_)); break;
+            case I_CMPXCHG16B:          JITASM_ASSERT(encoder::Opcode$< I_CMPXCHG16B >::Encode(instr, is64_)); break;
             case I_CMPXCHG8B:           JITASM_ASSERT(encoder::Opcode$< I_CMPXCHG8B >::Encode(instr, is64_)); break;
             case I_COMISD:              JITASM_ASSERT(encoder::Opcode$< I_COMISD >::Encode(instr, is64_)); break;
             case I_COMISS:              JITASM_ASSERT(encoder::Opcode$< I_COMISS >::Encode(instr, is64_)); break;
-            case I_FCOMP:               JITASM_ASSERT(encoder::Opcode$< I_FCOMP >::Encode(instr, is64_)); break;
-            case I_FCOMPI:              JITASM_ASSERT(encoder::Opcode$< I_FCOMPI >::Encode(instr, is64_)); break;
-            case I_FCOMI:               JITASM_ASSERT(encoder::Opcode$< I_FCOMI >::Encode(instr, is64_)); break;
-            case I_FCOM:                JITASM_ASSERT(encoder::Opcode$< I_FCOM >::Encode(instr, is64_)); break;
-            case I_FCOS:                JITASM_ASSERT(encoder::Opcode$< I_FCOS >::Encode(instr, is64_)); break;
             case I_CPUID:               JITASM_ASSERT(encoder::Opcode$< I_CPUID >::Encode(instr, is64_)); break;
             case I_CQO:                 JITASM_ASSERT(encoder::Opcode$< I_CQO >::Encode(instr, is64_)); break;
             case I_CRC32:               JITASM_ASSERT(encoder::Opcode$< I_CRC32 >::Encode(instr, is64_)); break;
             case I_CVTDQ2PD:            JITASM_ASSERT(encoder::Opcode$< I_CVTDQ2PD >::Encode(instr, is64_)); break;
             case I_CVTDQ2PS:            JITASM_ASSERT(encoder::Opcode$< I_CVTDQ2PS >::Encode(instr, is64_)); break;
             case I_CVTPD2DQ:            JITASM_ASSERT(encoder::Opcode$< I_CVTPD2DQ >::Encode(instr, is64_)); break;
+            case I_CVTPD2PI:            JITASM_ASSERT(encoder::Opcode$< I_CVTPD2PI >::Encode(instr, is64_)); break;
             case I_CVTPD2PS:            JITASM_ASSERT(encoder::Opcode$< I_CVTPD2PS >::Encode(instr, is64_)); break;
+            case I_CVTPI2PD:            JITASM_ASSERT(encoder::Opcode$< I_CVTPI2PD >::Encode(instr, is64_)); break;
+            case I_CVTPI2PS:            JITASM_ASSERT(encoder::Opcode$< I_CVTPI2PS >::Encode(instr, is64_)); break;
             case I_CVTPS2DQ:            JITASM_ASSERT(encoder::Opcode$< I_CVTPS2DQ >::Encode(instr, is64_)); break;
             case I_CVTPS2PD:            JITASM_ASSERT(encoder::Opcode$< I_CVTPS2PD >::Encode(instr, is64_)); break;
+            case I_CVTPS2PI:            JITASM_ASSERT(encoder::Opcode$< I_CVTPS2PI >::Encode(instr, is64_)); break;
             case I_CVTSD2SI:            JITASM_ASSERT(encoder::Opcode$< I_CVTSD2SI >::Encode(instr, is64_)); break;
             case I_CVTSD2SS:            JITASM_ASSERT(encoder::Opcode$< I_CVTSD2SS >::Encode(instr, is64_)); break;
             case I_CVTSI2SD:            JITASM_ASSERT(encoder::Opcode$< I_CVTSI2SD >::Encode(instr, is64_)); break;
@@ -1704,7 +611,9 @@ namespace jitasm
             case I_CVTSS2SD:            JITASM_ASSERT(encoder::Opcode$< I_CVTSS2SD >::Encode(instr, is64_)); break;
             case I_CVTSS2SI:            JITASM_ASSERT(encoder::Opcode$< I_CVTSS2SI >::Encode(instr, is64_)); break;
             case I_CVTTPD2DQ:           JITASM_ASSERT(encoder::Opcode$< I_CVTTPD2DQ >::Encode(instr, is64_)); break;
+            case I_CVTTPD2PI:           JITASM_ASSERT(encoder::Opcode$< I_CVTTPD2PI >::Encode(instr, is64_)); break;
             case I_CVTTPS2DQ:           JITASM_ASSERT(encoder::Opcode$< I_CVTTPS2DQ >::Encode(instr, is64_)); break;
+            case I_CVTTPS2PI:           JITASM_ASSERT(encoder::Opcode$< I_CVTTPS2PI >::Encode(instr, is64_)); break;
             case I_CVTTSD2SI:           JITASM_ASSERT(encoder::Opcode$< I_CVTTSD2SI >::Encode(instr, is64_)); break;
             case I_CVTTSS2SI:           JITASM_ASSERT(encoder::Opcode$< I_CVTTSS2SI >::Encode(instr, is64_)); break;
             case I_CWD:                 JITASM_ASSERT(encoder::Opcode$< I_CWD >::Encode(instr, is64_)); break;
@@ -1716,34 +625,52 @@ namespace jitasm
             case I_DIV:                 JITASM_ASSERT(encoder::Opcode$< I_DIV >::Encode(instr, is64_)); break;
             case I_DIVPD:               JITASM_ASSERT(encoder::Opcode$< I_DIVPD >::Encode(instr, is64_)); break;
             case I_DIVPS:               JITASM_ASSERT(encoder::Opcode$< I_DIVPS >::Encode(instr, is64_)); break;
-            case I_FDIVR:               JITASM_ASSERT(encoder::Opcode$< I_FDIVR >::Encode(instr, is64_)); break;
-            case I_FIDIVR:              JITASM_ASSERT(encoder::Opcode$< I_FIDIVR >::Encode(instr, is64_)); break;
-            case I_FDIVRP:              JITASM_ASSERT(encoder::Opcode$< I_FDIVRP >::Encode(instr, is64_)); break;
             case I_DIVSD:               JITASM_ASSERT(encoder::Opcode$< I_DIVSD >::Encode(instr, is64_)); break;
             case I_DIVSS:               JITASM_ASSERT(encoder::Opcode$< I_DIVSS >::Encode(instr, is64_)); break;
-            case I_FDIV:                JITASM_ASSERT(encoder::Opcode$< I_FDIV >::Encode(instr, is64_)); break;
-            case I_FIDIV:               JITASM_ASSERT(encoder::Opcode$< I_FIDIV >::Encode(instr, is64_)); break;
-            case I_FDIVP:               JITASM_ASSERT(encoder::Opcode$< I_FDIVP >::Encode(instr, is64_)); break;
             case I_DPPD:                JITASM_ASSERT(encoder::Opcode$< I_DPPD >::Encode(instr, is64_)); break;
             case I_DPPS:                JITASM_ASSERT(encoder::Opcode$< I_DPPS >::Encode(instr, is64_)); break;
-            case I_RET:                 JITASM_ASSERT(encoder::Opcode$< I_RET >::Encode(instr, is64_)); break;
+            case I_EMMS:                JITASM_ASSERT(encoder::Opcode$< I_EMMS >::Encode(instr, is64_)); break;
             case I_ENCLS:               JITASM_ASSERT(encoder::Opcode$< I_ENCLS >::Encode(instr, is64_)); break;
             case I_ENCLU:               JITASM_ASSERT(encoder::Opcode$< I_ENCLU >::Encode(instr, is64_)); break;
             case I_ENTER:               JITASM_ASSERT(encoder::Opcode$< I_ENTER >::Encode(instr, is64_)); break;
             case I_EXTRACTPS:           JITASM_ASSERT(encoder::Opcode$< I_EXTRACTPS >::Encode(instr, is64_)); break;
             case I_EXTRQ:               JITASM_ASSERT(encoder::Opcode$< I_EXTRQ >::Encode(instr, is64_)); break;
             case I_F2XM1:               JITASM_ASSERT(encoder::Opcode$< I_F2XM1 >::Encode(instr, is64_)); break;
-            case I_LCALL:               JITASM_ASSERT(encoder::Opcode$< I_LCALL >::Encode(instr, is64_)); break;
-            case I_LJMP:                JITASM_ASSERT(encoder::Opcode$< I_LJMP >::Encode(instr, is64_)); break;
+            case I_FABS:                JITASM_ASSERT(encoder::Opcode$< I_FABS >::Encode(instr, is64_)); break;
+            case I_FADD:                JITASM_ASSERT(encoder::Opcode$< I_FADD >::Encode(instr, is64_)); break;
+            case I_FADDP:               JITASM_ASSERT(encoder::Opcode$< I_FADDP >::Encode(instr, is64_)); break;
             case I_FBLD:                JITASM_ASSERT(encoder::Opcode$< I_FBLD >::Encode(instr, is64_)); break;
             case I_FBSTP:               JITASM_ASSERT(encoder::Opcode$< I_FBSTP >::Encode(instr, is64_)); break;
+            case I_FCHS:                JITASM_ASSERT(encoder::Opcode$< I_FCHS >::Encode(instr, is64_)); break;
+            case I_FCMOVcc:             JITASM_ASSERT(encoder::Opcode$< I_FCMOVcc >::Encode(instr, is64_)); break;
+            case I_FCOM:                JITASM_ASSERT(encoder::Opcode$< I_FCOM >::Encode(instr, is64_)); break;
+            case I_FCOMI:               JITASM_ASSERT(encoder::Opcode$< I_FCOMI >::Encode(instr, is64_)); break;
+            case I_FCOMP:               JITASM_ASSERT(encoder::Opcode$< I_FCOMP >::Encode(instr, is64_)); break;
+            case I_FCOMPI:              JITASM_ASSERT(encoder::Opcode$< I_FCOMPI >::Encode(instr, is64_)); break;
             case I_FCOMPP:              JITASM_ASSERT(encoder::Opcode$< I_FCOMPP >::Encode(instr, is64_)); break;
+            case I_FCOS:                JITASM_ASSERT(encoder::Opcode$< I_FCOS >::Encode(instr, is64_)); break;
             case I_FDECSTP:             JITASM_ASSERT(encoder::Opcode$< I_FDECSTP >::Encode(instr, is64_)); break;
+            case I_FDIV:                JITASM_ASSERT(encoder::Opcode$< I_FDIV >::Encode(instr, is64_)); break;
+            case I_FDIVP:               JITASM_ASSERT(encoder::Opcode$< I_FDIVP >::Encode(instr, is64_)); break;
+            case I_FDIVR:               JITASM_ASSERT(encoder::Opcode$< I_FDIVR >::Encode(instr, is64_)); break;
+            case I_FDIVRP:              JITASM_ASSERT(encoder::Opcode$< I_FDIVRP >::Encode(instr, is64_)); break;
             case I_FEMMS:               JITASM_ASSERT(encoder::Opcode$< I_FEMMS >::Encode(instr, is64_)); break;
             case I_FFREE:               JITASM_ASSERT(encoder::Opcode$< I_FFREE >::Encode(instr, is64_)); break;
+            case I_FIADD:               JITASM_ASSERT(encoder::Opcode$< I_FIADD >::Encode(instr, is64_)); break;
             case I_FICOM:               JITASM_ASSERT(encoder::Opcode$< I_FICOM >::Encode(instr, is64_)); break;
             case I_FICOMP:              JITASM_ASSERT(encoder::Opcode$< I_FICOMP >::Encode(instr, is64_)); break;
+            case I_FIDIV:               JITASM_ASSERT(encoder::Opcode$< I_FIDIV >::Encode(instr, is64_)); break;
+            case I_FIDIVR:              JITASM_ASSERT(encoder::Opcode$< I_FIDIVR >::Encode(instr, is64_)); break;
+            case I_FILD:                JITASM_ASSERT(encoder::Opcode$< I_FILD >::Encode(instr, is64_)); break;
+            case I_FIMUL:               JITASM_ASSERT(encoder::Opcode$< I_FIMUL >::Encode(instr, is64_)); break;
             case I_FINCSTP:             JITASM_ASSERT(encoder::Opcode$< I_FINCSTP >::Encode(instr, is64_)); break;
+            case I_FIST:                JITASM_ASSERT(encoder::Opcode$< I_FIST >::Encode(instr, is64_)); break;
+            case I_FISTP:               JITASM_ASSERT(encoder::Opcode$< I_FISTP >::Encode(instr, is64_)); break;
+            case I_FISTTP:              JITASM_ASSERT(encoder::Opcode$< I_FISTTP >::Encode(instr, is64_)); break;
+            case I_FISUB:               JITASM_ASSERT(encoder::Opcode$< I_FISUB >::Encode(instr, is64_)); break;
+            case I_FISUBR:              JITASM_ASSERT(encoder::Opcode$< I_FISUBR >::Encode(instr, is64_)); break;
+            case I_FLD:                 JITASM_ASSERT(encoder::Opcode$< I_FLD >::Encode(instr, is64_)); break;
+            case I_FLD1:                JITASM_ASSERT(encoder::Opcode$< I_FLD1 >::Encode(instr, is64_)); break;
             case I_FLDCW:               JITASM_ASSERT(encoder::Opcode$< I_FLDCW >::Encode(instr, is64_)); break;
             case I_FLDENV:              JITASM_ASSERT(encoder::Opcode$< I_FLDENV >::Encode(instr, is64_)); break;
             case I_FLDL2E:              JITASM_ASSERT(encoder::Opcode$< I_FLDL2E >::Encode(instr, is64_)); break;
@@ -1751,10 +678,15 @@ namespace jitasm
             case I_FLDLG2:              JITASM_ASSERT(encoder::Opcode$< I_FLDLG2 >::Encode(instr, is64_)); break;
             case I_FLDLN2:              JITASM_ASSERT(encoder::Opcode$< I_FLDLN2 >::Encode(instr, is64_)); break;
             case I_FLDPI:               JITASM_ASSERT(encoder::Opcode$< I_FLDPI >::Encode(instr, is64_)); break;
+            case I_FLDZ:                JITASM_ASSERT(encoder::Opcode$< I_FLDZ >::Encode(instr, is64_)); break;
+            case I_FMUL:                JITASM_ASSERT(encoder::Opcode$< I_FMUL >::Encode(instr, is64_)); break;
+            case I_FMULP:               JITASM_ASSERT(encoder::Opcode$< I_FMULP >::Encode(instr, is64_)); break;
             case I_FNCLEX:              JITASM_ASSERT(encoder::Opcode$< I_FNCLEX >::Encode(instr, is64_)); break;
             case I_FNINIT:              JITASM_ASSERT(encoder::Opcode$< I_FNINIT >::Encode(instr, is64_)); break;
             case I_FNOP:                JITASM_ASSERT(encoder::Opcode$< I_FNOP >::Encode(instr, is64_)); break;
+            case I_FNSAVE:              JITASM_ASSERT(encoder::Opcode$< I_FNSAVE >::Encode(instr, is64_)); break;
             case I_FNSTCW:              JITASM_ASSERT(encoder::Opcode$< I_FNSTCW >::Encode(instr, is64_)); break;
+            case I_FNSTENV:             JITASM_ASSERT(encoder::Opcode$< I_FNSTENV >::Encode(instr, is64_)); break;
             case I_FNSTSW:              JITASM_ASSERT(encoder::Opcode$< I_FNSTSW >::Encode(instr, is64_)); break;
             case I_FPATAN:              JITASM_ASSERT(encoder::Opcode$< I_FPATAN >::Encode(instr, is64_)); break;
             case I_FPREM:               JITASM_ASSERT(encoder::Opcode$< I_FPREM >::Encode(instr, is64_)); break;
@@ -1762,12 +694,26 @@ namespace jitasm
             case I_FPTAN:               JITASM_ASSERT(encoder::Opcode$< I_FPTAN >::Encode(instr, is64_)); break;
             case I_FRNDINT:             JITASM_ASSERT(encoder::Opcode$< I_FRNDINT >::Encode(instr, is64_)); break;
             case I_FRSTOR:              JITASM_ASSERT(encoder::Opcode$< I_FRSTOR >::Encode(instr, is64_)); break;
-            case I_FNSAVE:              JITASM_ASSERT(encoder::Opcode$< I_FNSAVE >::Encode(instr, is64_)); break;
             case I_FSCALE:              JITASM_ASSERT(encoder::Opcode$< I_FSCALE >::Encode(instr, is64_)); break;
             case I_FSETPM:              JITASM_ASSERT(encoder::Opcode$< I_FSETPM >::Encode(instr, is64_)); break;
+            case I_FSIN:                JITASM_ASSERT(encoder::Opcode$< I_FSIN >::Encode(instr, is64_)); break;
             case I_FSINCOS:             JITASM_ASSERT(encoder::Opcode$< I_FSINCOS >::Encode(instr, is64_)); break;
-            case I_FNSTENV:             JITASM_ASSERT(encoder::Opcode$< I_FNSTENV >::Encode(instr, is64_)); break;
+            case I_FSQRT:               JITASM_ASSERT(encoder::Opcode$< I_FSQRT >::Encode(instr, is64_)); break;
+            case I_FST:                 JITASM_ASSERT(encoder::Opcode$< I_FST >::Encode(instr, is64_)); break;
+            case I_FSTP:                JITASM_ASSERT(encoder::Opcode$< I_FSTP >::Encode(instr, is64_)); break;
+            case I_FSTPNCE:             JITASM_ASSERT(encoder::Opcode$< I_FSTPNCE >::Encode(instr, is64_)); break;
+            case I_FSUB:                JITASM_ASSERT(encoder::Opcode$< I_FSUB >::Encode(instr, is64_)); break;
+            case I_FSUBP:               JITASM_ASSERT(encoder::Opcode$< I_FSUBP >::Encode(instr, is64_)); break;
+            case I_FSUBR:               JITASM_ASSERT(encoder::Opcode$< I_FSUBR >::Encode(instr, is64_)); break;
+            case I_FSUBRP:              JITASM_ASSERT(encoder::Opcode$< I_FSUBRP >::Encode(instr, is64_)); break;
+            case I_FTST:                JITASM_ASSERT(encoder::Opcode$< I_FTST >::Encode(instr, is64_)); break;
+            case I_FUCOM:               JITASM_ASSERT(encoder::Opcode$< I_FUCOM >::Encode(instr, is64_)); break;
+            case I_FUCOMI:              JITASM_ASSERT(encoder::Opcode$< I_FUCOMI >::Encode(instr, is64_)); break;
+            case I_FUCOMP:              JITASM_ASSERT(encoder::Opcode$< I_FUCOMP >::Encode(instr, is64_)); break;
+            case I_FUCOMPI:             JITASM_ASSERT(encoder::Opcode$< I_FUCOMPI >::Encode(instr, is64_)); break;
+            case I_FUCOMPP:             JITASM_ASSERT(encoder::Opcode$< I_FUCOMPP >::Encode(instr, is64_)); break;
             case I_FXAM:                JITASM_ASSERT(encoder::Opcode$< I_FXAM >::Encode(instr, is64_)); break;
+            case I_FXCH:                JITASM_ASSERT(encoder::Opcode$< I_FXCH >::Encode(instr, is64_)); break;
             case I_FXRSTOR:             JITASM_ASSERT(encoder::Opcode$< I_FXRSTOR >::Encode(instr, is64_)); break;
             case I_FXRSTOR64:           JITASM_ASSERT(encoder::Opcode$< I_FXRSTOR64 >::Encode(instr, is64_)); break;
             case I_FXSAVE:              JITASM_ASSERT(encoder::Opcode$< I_FXSAVE >::Encode(instr, is64_)); break;
@@ -1775,14 +721,6 @@ namespace jitasm
             case I_FXTRACT:             JITASM_ASSERT(encoder::Opcode$< I_FXTRACT >::Encode(instr, is64_)); break;
             case I_FYL2X:               JITASM_ASSERT(encoder::Opcode$< I_FYL2X >::Encode(instr, is64_)); break;
             case I_FYL2XP1:             JITASM_ASSERT(encoder::Opcode$< I_FYL2XP1 >::Encode(instr, is64_)); break;
-            case I_MOVAPD:              JITASM_ASSERT(encoder::Opcode$< I_MOVAPD >::Encode(instr, is64_)); break;
-            case I_MOVAPS:              JITASM_ASSERT(encoder::Opcode$< I_MOVAPS >::Encode(instr, is64_)); break;
-            case I_ORPD:                JITASM_ASSERT(encoder::Opcode$< I_ORPD >::Encode(instr, is64_)); break;
-            case I_ORPS:                JITASM_ASSERT(encoder::Opcode$< I_ORPS >::Encode(instr, is64_)); break;
-            case I_VMOVAPD:             JITASM_ASSERT(encoder::Opcode$< I_VMOVAPD >::Encode(instr, is64_)); break;
-            case I_VMOVAPS:             JITASM_ASSERT(encoder::Opcode$< I_VMOVAPS >::Encode(instr, is64_)); break;
-            case I_XORPD:               JITASM_ASSERT(encoder::Opcode$< I_XORPD >::Encode(instr, is64_)); break;
-            case I_XORPS:               JITASM_ASSERT(encoder::Opcode$< I_XORPS >::Encode(instr, is64_)); break;
             case I_GETSEC:              JITASM_ASSERT(encoder::Opcode$< I_GETSEC >::Encode(instr, is64_)); break;
             case I_HADDPD:              JITASM_ASSERT(encoder::Opcode$< I_HADDPD >::Encode(instr, is64_)); break;
             case I_HADDPS:              JITASM_ASSERT(encoder::Opcode$< I_HADDPS >::Encode(instr, is64_)); break;
@@ -1790,15 +728,12 @@ namespace jitasm
             case I_HSUBPD:              JITASM_ASSERT(encoder::Opcode$< I_HSUBPD >::Encode(instr, is64_)); break;
             case I_HSUBPS:              JITASM_ASSERT(encoder::Opcode$< I_HSUBPS >::Encode(instr, is64_)); break;
             case I_IDIV:                JITASM_ASSERT(encoder::Opcode$< I_IDIV >::Encode(instr, is64_)); break;
-            case I_FILD:                JITASM_ASSERT(encoder::Opcode$< I_FILD >::Encode(instr, is64_)); break;
             case I_IMUL:                JITASM_ASSERT(encoder::Opcode$< I_IMUL >::Encode(instr, is64_)); break;
             case I_IN:                  JITASM_ASSERT(encoder::Opcode$< I_IN >::Encode(instr, is64_)); break;
             case I_INC:                 JITASM_ASSERT(encoder::Opcode$< I_INC >::Encode(instr, is64_)); break;
-            case I_INSB:                JITASM_ASSERT(encoder::Opcode$< I_INSB >::Encode(instr, is64_)); break;
+            case I_INS:                 JITASM_ASSERT(encoder::Opcode$< I_INS >::Encode(instr, is64_)); break;
             case I_INSERTPS:            JITASM_ASSERT(encoder::Opcode$< I_INSERTPS >::Encode(instr, is64_)); break;
             case I_INSERTQ:             JITASM_ASSERT(encoder::Opcode$< I_INSERTQ >::Encode(instr, is64_)); break;
-            case I_INSD:                JITASM_ASSERT(encoder::Opcode$< I_INSD >::Encode(instr, is64_)); break;
-            case I_INSW:                JITASM_ASSERT(encoder::Opcode$< I_INSW >::Encode(instr, is64_)); break;
             case I_INT:                 JITASM_ASSERT(encoder::Opcode$< I_INT >::Encode(instr, is64_)); break;
             case I_INT1:                JITASM_ASSERT(encoder::Opcode$< I_INT1 >::Encode(instr, is64_)); break;
             case I_INT3:                JITASM_ASSERT(encoder::Opcode$< I_INT3 >::Encode(instr, is64_)); break;
@@ -1812,26 +747,6 @@ namespace jitasm
             case I_IRET:                JITASM_ASSERT(encoder::Opcode$< I_IRET >::Encode(instr, is64_)); break;
             case I_IRETD:               JITASM_ASSERT(encoder::Opcode$< I_IRETD >::Encode(instr, is64_)); break;
             case I_IRETQ:               JITASM_ASSERT(encoder::Opcode$< I_IRETQ >::Encode(instr, is64_)); break;
-            case I_FISTTP:              JITASM_ASSERT(encoder::Opcode$< I_FISTTP >::Encode(instr, is64_)); break;
-            case I_FIST:                JITASM_ASSERT(encoder::Opcode$< I_FIST >::Encode(instr, is64_)); break;
-            case I_FISTP:               JITASM_ASSERT(encoder::Opcode$< I_FISTP >::Encode(instr, is64_)); break;
-            case I_UCOMISD:             JITASM_ASSERT(encoder::Opcode$< I_UCOMISD >::Encode(instr, is64_)); break;
-            case I_UCOMISS:             JITASM_ASSERT(encoder::Opcode$< I_UCOMISS >::Encode(instr, is64_)); break;
-            case I_VCMP:                JITASM_ASSERT(encoder::Opcode$< I_VCMP >::Encode(instr, is64_)); break;
-            case I_VCOMISD:             JITASM_ASSERT(encoder::Opcode$< I_VCOMISD >::Encode(instr, is64_)); break;
-            case I_VCOMISS:             JITASM_ASSERT(encoder::Opcode$< I_VCOMISS >::Encode(instr, is64_)); break;
-            case I_VCVTSD2SS:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSD2SS >::Encode(instr, is64_)); break;
-            case I_VCVTSI2SD:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSI2SD >::Encode(instr, is64_)); break;
-            case I_VCVTSI2SS:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSI2SS >::Encode(instr, is64_)); break;
-            case I_VCVTSS2SD:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSS2SD >::Encode(instr, is64_)); break;
-            case I_VCVTTSD2SI:          JITASM_ASSERT(encoder::Opcode$< I_VCVTTSD2SI >::Encode(instr, is64_)); break;
-            case I_VCVTTSD2USI:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTSD2USI >::Encode(instr, is64_)); break;
-            case I_VCVTTSS2SI:          JITASM_ASSERT(encoder::Opcode$< I_VCVTTSS2SI >::Encode(instr, is64_)); break;
-            case I_VCVTTSS2USI:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTSS2USI >::Encode(instr, is64_)); break;
-            case I_VCVTUSI2SD:          JITASM_ASSERT(encoder::Opcode$< I_VCVTUSI2SD >::Encode(instr, is64_)); break;
-            case I_VCVTUSI2SS:          JITASM_ASSERT(encoder::Opcode$< I_VCVTUSI2SS >::Encode(instr, is64_)); break;
-            case I_VUCOMISD:            JITASM_ASSERT(encoder::Opcode$< I_VUCOMISD >::Encode(instr, is64_)); break;
-            case I_VUCOMISS:            JITASM_ASSERT(encoder::Opcode$< I_VUCOMISS >::Encode(instr, is64_)); break;
             case I_JCC:                 JITASM_ASSERT(encoder::Opcode$< I_JCC >::Encode(instr, is64_)); break;
             case I_JMP:                 JITASM_ASSERT(encoder::Opcode$< I_JMP >::Encode(instr, is64_)); break;
             case I_KANDB:               JITASM_ASSERT(encoder::Opcode$< I_KANDB >::Encode(instr, is64_)); break;
@@ -1868,12 +783,10 @@ namespace jitasm
             case I_KXORW:               JITASM_ASSERT(encoder::Opcode$< I_KXORW >::Encode(instr, is64_)); break;
             case I_LAHF:                JITASM_ASSERT(encoder::Opcode$< I_LAHF >::Encode(instr, is64_)); break;
             case I_LAR:                 JITASM_ASSERT(encoder::Opcode$< I_LAR >::Encode(instr, is64_)); break;
+            case I_LCALL:               JITASM_ASSERT(encoder::Opcode$< I_LCALL >::Encode(instr, is64_)); break;
             case I_LDDQU:               JITASM_ASSERT(encoder::Opcode$< I_LDDQU >::Encode(instr, is64_)); break;
             case I_LDMXCSR:             JITASM_ASSERT(encoder::Opcode$< I_LDMXCSR >::Encode(instr, is64_)); break;
             case I_LDS:                 JITASM_ASSERT(encoder::Opcode$< I_LDS >::Encode(instr, is64_)); break;
-            case I_FLDZ:                JITASM_ASSERT(encoder::Opcode$< I_FLDZ >::Encode(instr, is64_)); break;
-            case I_FLD1:                JITASM_ASSERT(encoder::Opcode$< I_FLD1 >::Encode(instr, is64_)); break;
-            case I_FLD:                 JITASM_ASSERT(encoder::Opcode$< I_FLD >::Encode(instr, is64_)); break;
             case I_LEA:                 JITASM_ASSERT(encoder::Opcode$< I_LEA >::Encode(instr, is64_)); break;
             case I_LEAVE:               JITASM_ASSERT(encoder::Opcode$< I_LEAVE >::Encode(instr, is64_)); break;
             case I_LES:                 JITASM_ASSERT(encoder::Opcode$< I_LES >::Encode(instr, is64_)); break;
@@ -1882,22 +795,18 @@ namespace jitasm
             case I_LGDT:                JITASM_ASSERT(encoder::Opcode$< I_LGDT >::Encode(instr, is64_)); break;
             case I_LGS:                 JITASM_ASSERT(encoder::Opcode$< I_LGS >::Encode(instr, is64_)); break;
             case I_LIDT:                JITASM_ASSERT(encoder::Opcode$< I_LIDT >::Encode(instr, is64_)); break;
+            case I_LJMP:                JITASM_ASSERT(encoder::Opcode$< I_LJMP >::Encode(instr, is64_)); break;
             case I_LLDT:                JITASM_ASSERT(encoder::Opcode$< I_LLDT >::Encode(instr, is64_)); break;
             case I_LMSW:                JITASM_ASSERT(encoder::Opcode$< I_LMSW >::Encode(instr, is64_)); break;
-            case I_OR:                  JITASM_ASSERT(encoder::Opcode$< I_OR >::Encode(instr, is64_)); break;
             case I_LOCK:                JITASM_ASSERT(encoder::Opcode$< I_LOCK >::Encode(instr, is64_)); break;
-            case I_SUB:                 JITASM_ASSERT(encoder::Opcode$< I_SUB >::Encode(instr, is64_)); break;
-            case I_XOR:                 JITASM_ASSERT(encoder::Opcode$< I_XOR >::Encode(instr, is64_)); break;
             case I_LODS:                JITASM_ASSERT(encoder::Opcode$< I_LODS >::Encode(instr, is64_)); break;
             case I_LOOPCC:              JITASM_ASSERT(encoder::Opcode$< I_LOOPCC >::Encode(instr, is64_)); break;
-            case I_RETF:                JITASM_ASSERT(encoder::Opcode$< I_RETF >::Encode(instr, is64_)); break;
-            case I_RETFQ:               JITASM_ASSERT(encoder::Opcode$< I_RETFQ >::Encode(instr, is64_)); break;
             case I_LSL:                 JITASM_ASSERT(encoder::Opcode$< I_LSL >::Encode(instr, is64_)); break;
             case I_LSS:                 JITASM_ASSERT(encoder::Opcode$< I_LSS >::Encode(instr, is64_)); break;
             case I_LTR:                 JITASM_ASSERT(encoder::Opcode$< I_LTR >::Encode(instr, is64_)); break;
-            case I_XADD:                JITASM_ASSERT(encoder::Opcode$< I_XADD >::Encode(instr, is64_)); break;
             case I_LZCNT:               JITASM_ASSERT(encoder::Opcode$< I_LZCNT >::Encode(instr, is64_)); break;
             case I_MASKMOVDQU:          JITASM_ASSERT(encoder::Opcode$< I_MASKMOVDQU >::Encode(instr, is64_)); break;
+            case I_MASKMOVQ:            JITASM_ASSERT(encoder::Opcode$< I_MASKMOVQ >::Encode(instr, is64_)); break;
             case I_MAXPD:               JITASM_ASSERT(encoder::Opcode$< I_MAXPD >::Encode(instr, is64_)); break;
             case I_MAXPS:               JITASM_ASSERT(encoder::Opcode$< I_MAXPS >::Encode(instr, is64_)); break;
             case I_MAXSD:               JITASM_ASSERT(encoder::Opcode$< I_MAXSD >::Encode(instr, is64_)); break;
@@ -1907,100 +816,16 @@ namespace jitasm
             case I_MINPS:               JITASM_ASSERT(encoder::Opcode$< I_MINPS >::Encode(instr, is64_)); break;
             case I_MINSD:               JITASM_ASSERT(encoder::Opcode$< I_MINSD >::Encode(instr, is64_)); break;
             case I_MINSS:               JITASM_ASSERT(encoder::Opcode$< I_MINSS >::Encode(instr, is64_)); break;
-            case I_CVTPD2PI:            JITASM_ASSERT(encoder::Opcode$< I_CVTPD2PI >::Encode(instr, is64_)); break;
-            case I_CVTPI2PD:            JITASM_ASSERT(encoder::Opcode$< I_CVTPI2PD >::Encode(instr, is64_)); break;
-            case I_CVTPI2PS:            JITASM_ASSERT(encoder::Opcode$< I_CVTPI2PS >::Encode(instr, is64_)); break;
-            case I_CVTPS2PI:            JITASM_ASSERT(encoder::Opcode$< I_CVTPS2PI >::Encode(instr, is64_)); break;
-            case I_CVTTPD2PI:           JITASM_ASSERT(encoder::Opcode$< I_CVTTPD2PI >::Encode(instr, is64_)); break;
-            case I_CVTTPS2PI:           JITASM_ASSERT(encoder::Opcode$< I_CVTTPS2PI >::Encode(instr, is64_)); break;
-            case I_EMMS:                JITASM_ASSERT(encoder::Opcode$< I_EMMS >::Encode(instr, is64_)); break;
-            case I_MASKMOVQ:            JITASM_ASSERT(encoder::Opcode$< I_MASKMOVQ >::Encode(instr, is64_)); break;
-            case I_MOVD:                JITASM_ASSERT(encoder::Opcode$< I_MOVD >::Encode(instr, is64_)); break;
-            case I_MOVDQ2Q:             JITASM_ASSERT(encoder::Opcode$< I_MOVDQ2Q >::Encode(instr, is64_)); break;
-            case I_MOVNTQ:              JITASM_ASSERT(encoder::Opcode$< I_MOVNTQ >::Encode(instr, is64_)); break;
-            case I_MOVQ2DQ:             JITASM_ASSERT(encoder::Opcode$< I_MOVQ2DQ >::Encode(instr, is64_)); break;
-            case I_MOVQ:                JITASM_ASSERT(encoder::Opcode$< I_MOVQ >::Encode(instr, is64_)); break;
-            case I_PABSB:               JITASM_ASSERT(encoder::Opcode$< I_PABSB >::Encode(instr, is64_)); break;
-            case I_PABSD:               JITASM_ASSERT(encoder::Opcode$< I_PABSD >::Encode(instr, is64_)); break;
-            case I_PABSW:               JITASM_ASSERT(encoder::Opcode$< I_PABSW >::Encode(instr, is64_)); break;
-            case I_PACKSSDW:            JITASM_ASSERT(encoder::Opcode$< I_PACKSSDW >::Encode(instr, is64_)); break;
-            case I_PACKSSWB:            JITASM_ASSERT(encoder::Opcode$< I_PACKSSWB >::Encode(instr, is64_)); break;
-            case I_PACKUSWB:            JITASM_ASSERT(encoder::Opcode$< I_PACKUSWB >::Encode(instr, is64_)); break;
-            case I_PADDB:               JITASM_ASSERT(encoder::Opcode$< I_PADDB >::Encode(instr, is64_)); break;
-            case I_PADDD:               JITASM_ASSERT(encoder::Opcode$< I_PADDD >::Encode(instr, is64_)); break;
-            case I_PADDQ:               JITASM_ASSERT(encoder::Opcode$< I_PADDQ >::Encode(instr, is64_)); break;
-            case I_PADDSB:              JITASM_ASSERT(encoder::Opcode$< I_PADDSB >::Encode(instr, is64_)); break;
-            case I_PADDSW:              JITASM_ASSERT(encoder::Opcode$< I_PADDSW >::Encode(instr, is64_)); break;
-            case I_PADDUSB:             JITASM_ASSERT(encoder::Opcode$< I_PADDUSB >::Encode(instr, is64_)); break;
-            case I_PADDUSW:             JITASM_ASSERT(encoder::Opcode$< I_PADDUSW >::Encode(instr, is64_)); break;
-            case I_PADDW:               JITASM_ASSERT(encoder::Opcode$< I_PADDW >::Encode(instr, is64_)); break;
-            case I_PALIGNR:             JITASM_ASSERT(encoder::Opcode$< I_PALIGNR >::Encode(instr, is64_)); break;
-            case I_PANDN:               JITASM_ASSERT(encoder::Opcode$< I_PANDN >::Encode(instr, is64_)); break;
-            case I_PAND:                JITASM_ASSERT(encoder::Opcode$< I_PAND >::Encode(instr, is64_)); break;
-            case I_PAVGB:               JITASM_ASSERT(encoder::Opcode$< I_PAVGB >::Encode(instr, is64_)); break;
-            case I_PAVGW:               JITASM_ASSERT(encoder::Opcode$< I_PAVGW >::Encode(instr, is64_)); break;
-            case I_PCMPEQB:             JITASM_ASSERT(encoder::Opcode$< I_PCMPEQB >::Encode(instr, is64_)); break;
-            case I_PCMPEQD:             JITASM_ASSERT(encoder::Opcode$< I_PCMPEQD >::Encode(instr, is64_)); break;
-            case I_PCMPEQW:             JITASM_ASSERT(encoder::Opcode$< I_PCMPEQW >::Encode(instr, is64_)); break;
-            case I_PCMPGTB:             JITASM_ASSERT(encoder::Opcode$< I_PCMPGTB >::Encode(instr, is64_)); break;
-            case I_PCMPGTD:             JITASM_ASSERT(encoder::Opcode$< I_PCMPGTD >::Encode(instr, is64_)); break;
-            case I_PCMPGTW:             JITASM_ASSERT(encoder::Opcode$< I_PCMPGTW >::Encode(instr, is64_)); break;
-            case I_PEXTRW:              JITASM_ASSERT(encoder::Opcode$< I_PEXTRW >::Encode(instr, is64_)); break;
-            case I_PHADDSW:             JITASM_ASSERT(encoder::Opcode$< I_PHADDSW >::Encode(instr, is64_)); break;
-            case I_PHADDW:              JITASM_ASSERT(encoder::Opcode$< I_PHADDW >::Encode(instr, is64_)); break;
-            case I_PHADDD:              JITASM_ASSERT(encoder::Opcode$< I_PHADDD >::Encode(instr, is64_)); break;
-            case I_PHSUBD:              JITASM_ASSERT(encoder::Opcode$< I_PHSUBD >::Encode(instr, is64_)); break;
-            case I_PHSUBSW:             JITASM_ASSERT(encoder::Opcode$< I_PHSUBSW >::Encode(instr, is64_)); break;
-            case I_PHSUBW:              JITASM_ASSERT(encoder::Opcode$< I_PHSUBW >::Encode(instr, is64_)); break;
-            case I_PINSRW:              JITASM_ASSERT(encoder::Opcode$< I_PINSRW >::Encode(instr, is64_)); break;
-            case I_PMADDUBSW:           JITASM_ASSERT(encoder::Opcode$< I_PMADDUBSW >::Encode(instr, is64_)); break;
-            case I_PMADDWD:             JITASM_ASSERT(encoder::Opcode$< I_PMADDWD >::Encode(instr, is64_)); break;
-            case I_PMAXSW:              JITASM_ASSERT(encoder::Opcode$< I_PMAXSW >::Encode(instr, is64_)); break;
-            case I_PMAXUB:              JITASM_ASSERT(encoder::Opcode$< I_PMAXUB >::Encode(instr, is64_)); break;
-            case I_PMINSW:              JITASM_ASSERT(encoder::Opcode$< I_PMINSW >::Encode(instr, is64_)); break;
-            case I_PMINUB:              JITASM_ASSERT(encoder::Opcode$< I_PMINUB >::Encode(instr, is64_)); break;
-            case I_PMOVMSKB:            JITASM_ASSERT(encoder::Opcode$< I_PMOVMSKB >::Encode(instr, is64_)); break;
-            case I_PMULHRSW:            JITASM_ASSERT(encoder::Opcode$< I_PMULHRSW >::Encode(instr, is64_)); break;
-            case I_PMULHUW:             JITASM_ASSERT(encoder::Opcode$< I_PMULHUW >::Encode(instr, is64_)); break;
-            case I_PMULHW:              JITASM_ASSERT(encoder::Opcode$< I_PMULHW >::Encode(instr, is64_)); break;
-            case I_PMULLW:              JITASM_ASSERT(encoder::Opcode$< I_PMULLW >::Encode(instr, is64_)); break;
-            case I_PMULUDQ:             JITASM_ASSERT(encoder::Opcode$< I_PMULUDQ >::Encode(instr, is64_)); break;
-            case I_POR:                 JITASM_ASSERT(encoder::Opcode$< I_POR >::Encode(instr, is64_)); break;
-            case I_PSADBW:              JITASM_ASSERT(encoder::Opcode$< I_PSADBW >::Encode(instr, is64_)); break;
-            case I_PSHUFB:              JITASM_ASSERT(encoder::Opcode$< I_PSHUFB >::Encode(instr, is64_)); break;
-            case I_PSHUFW:              JITASM_ASSERT(encoder::Opcode$< I_PSHUFW >::Encode(instr, is64_)); break;
-            case I_PSIGNB:              JITASM_ASSERT(encoder::Opcode$< I_PSIGNB >::Encode(instr, is64_)); break;
-            case I_PSIGND:              JITASM_ASSERT(encoder::Opcode$< I_PSIGND >::Encode(instr, is64_)); break;
-            case I_PSIGNW:              JITASM_ASSERT(encoder::Opcode$< I_PSIGNW >::Encode(instr, is64_)); break;
-            case I_PSLLD:               JITASM_ASSERT(encoder::Opcode$< I_PSLLD >::Encode(instr, is64_)); break;
-            case I_PSLLQ:               JITASM_ASSERT(encoder::Opcode$< I_PSLLQ >::Encode(instr, is64_)); break;
-            case I_PSLLW:               JITASM_ASSERT(encoder::Opcode$< I_PSLLW >::Encode(instr, is64_)); break;
-            case I_PSRAD:               JITASM_ASSERT(encoder::Opcode$< I_PSRAD >::Encode(instr, is64_)); break;
-            case I_PSRAW:               JITASM_ASSERT(encoder::Opcode$< I_PSRAW >::Encode(instr, is64_)); break;
-            case I_PSRLD:               JITASM_ASSERT(encoder::Opcode$< I_PSRLD >::Encode(instr, is64_)); break;
-            case I_PSRLQ:               JITASM_ASSERT(encoder::Opcode$< I_PSRLQ >::Encode(instr, is64_)); break;
-            case I_PSRLW:               JITASM_ASSERT(encoder::Opcode$< I_PSRLW >::Encode(instr, is64_)); break;
-            case I_PSUBB:               JITASM_ASSERT(encoder::Opcode$< I_PSUBB >::Encode(instr, is64_)); break;
-            case I_PSUBD:               JITASM_ASSERT(encoder::Opcode$< I_PSUBD >::Encode(instr, is64_)); break;
-            case I_PSUBQ:               JITASM_ASSERT(encoder::Opcode$< I_PSUBQ >::Encode(instr, is64_)); break;
-            case I_PSUBSB:              JITASM_ASSERT(encoder::Opcode$< I_PSUBSB >::Encode(instr, is64_)); break;
-            case I_PSUBSW:              JITASM_ASSERT(encoder::Opcode$< I_PSUBSW >::Encode(instr, is64_)); break;
-            case I_PSUBUSB:             JITASM_ASSERT(encoder::Opcode$< I_PSUBUSB >::Encode(instr, is64_)); break;
-            case I_PSUBUSW:             JITASM_ASSERT(encoder::Opcode$< I_PSUBUSW >::Encode(instr, is64_)); break;
-            case I_PSUBW:               JITASM_ASSERT(encoder::Opcode$< I_PSUBW >::Encode(instr, is64_)); break;
-            case I_PUNPCKHBW:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKHBW >::Encode(instr, is64_)); break;
-            case I_PUNPCKHDQ:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKHDQ >::Encode(instr, is64_)); break;
-            case I_PUNPCKHWD:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKHWD >::Encode(instr, is64_)); break;
-            case I_PUNPCKLBW:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKLBW >::Encode(instr, is64_)); break;
-            case I_PUNPCKLDQ:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKLDQ >::Encode(instr, is64_)); break;
-            case I_PUNPCKLWD:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKLWD >::Encode(instr, is64_)); break;
-            case I_PXOR:                JITASM_ASSERT(encoder::Opcode$< I_PXOR >::Encode(instr, is64_)); break;
             case I_MONITOR:             JITASM_ASSERT(encoder::Opcode$< I_MONITOR >::Encode(instr, is64_)); break;
             case I_MONTMUL:             JITASM_ASSERT(encoder::Opcode$< I_MONTMUL >::Encode(instr, is64_)); break;
             case I_MOV:                 JITASM_ASSERT(encoder::Opcode$< I_MOV >::Encode(instr, is64_)); break;
             case I_MOVABS:              JITASM_ASSERT(encoder::Opcode$< I_MOVABS >::Encode(instr, is64_)); break;
+            case I_MOVAPD:              JITASM_ASSERT(encoder::Opcode$< I_MOVAPD >::Encode(instr, is64_)); break;
+            case I_MOVAPS:              JITASM_ASSERT(encoder::Opcode$< I_MOVAPS >::Encode(instr, is64_)); break;
             case I_MOVBE:               JITASM_ASSERT(encoder::Opcode$< I_MOVBE >::Encode(instr, is64_)); break;
+            case I_MOVD:                JITASM_ASSERT(encoder::Opcode$< I_MOVD >::Encode(instr, is64_)); break;
             case I_MOVDDUP:             JITASM_ASSERT(encoder::Opcode$< I_MOVDDUP >::Encode(instr, is64_)); break;
+            case I_MOVDQ2Q:             JITASM_ASSERT(encoder::Opcode$< I_MOVDQ2Q >::Encode(instr, is64_)); break;
             case I_MOVDQA:              JITASM_ASSERT(encoder::Opcode$< I_MOVDQA >::Encode(instr, is64_)); break;
             case I_MOVDQU:              JITASM_ASSERT(encoder::Opcode$< I_MOVDQU >::Encode(instr, is64_)); break;
             case I_MOVHLPS:             JITASM_ASSERT(encoder::Opcode$< I_MOVHLPS >::Encode(instr, is64_)); break;
@@ -2011,14 +836,18 @@ namespace jitasm
             case I_MOVLPS:              JITASM_ASSERT(encoder::Opcode$< I_MOVLPS >::Encode(instr, is64_)); break;
             case I_MOVMSKPD:            JITASM_ASSERT(encoder::Opcode$< I_MOVMSKPD >::Encode(instr, is64_)); break;
             case I_MOVMSKPS:            JITASM_ASSERT(encoder::Opcode$< I_MOVMSKPS >::Encode(instr, is64_)); break;
-            case I_MOVNTDQA:            JITASM_ASSERT(encoder::Opcode$< I_MOVNTDQA >::Encode(instr, is64_)); break;
             case I_MOVNTDQ:             JITASM_ASSERT(encoder::Opcode$< I_MOVNTDQ >::Encode(instr, is64_)); break;
+            case I_MOVNTDQA:            JITASM_ASSERT(encoder::Opcode$< I_MOVNTDQA >::Encode(instr, is64_)); break;
             case I_MOVNTI:              JITASM_ASSERT(encoder::Opcode$< I_MOVNTI >::Encode(instr, is64_)); break;
             case I_MOVNTPD:             JITASM_ASSERT(encoder::Opcode$< I_MOVNTPD >::Encode(instr, is64_)); break;
             case I_MOVNTPS:             JITASM_ASSERT(encoder::Opcode$< I_MOVNTPS >::Encode(instr, is64_)); break;
+            case I_MOVNTQ:              JITASM_ASSERT(encoder::Opcode$< I_MOVNTQ >::Encode(instr, is64_)); break;
             case I_MOVNTSD:             JITASM_ASSERT(encoder::Opcode$< I_MOVNTSD >::Encode(instr, is64_)); break;
             case I_MOVNTSS:             JITASM_ASSERT(encoder::Opcode$< I_MOVNTSS >::Encode(instr, is64_)); break;
+            case I_MOVQ:                JITASM_ASSERT(encoder::Opcode$< I_MOVQ >::Encode(instr, is64_)); break;
+            case I_MOVQ2DQ:             JITASM_ASSERT(encoder::Opcode$< I_MOVQ2DQ >::Encode(instr, is64_)); break;
             case I_MOVS:                JITASM_ASSERT(encoder::Opcode$< I_MOVS >::Encode(instr, is64_)); break;
+            case I_MOVSD:               JITASM_ASSERT(encoder::Opcode$< I_MOVSD >::Encode(instr, is64_)); break;
             case I_MOVSHDUP:            JITASM_ASSERT(encoder::Opcode$< I_MOVSHDUP >::Encode(instr, is64_)); break;
             case I_MOVSLDUP:            JITASM_ASSERT(encoder::Opcode$< I_MOVSLDUP >::Encode(instr, is64_)); break;
             case I_MOVSS:               JITASM_ASSERT(encoder::Opcode$< I_MOVSS >::Encode(instr, is64_)); break;
@@ -2034,27 +863,50 @@ namespace jitasm
             case I_MULSD:               JITASM_ASSERT(encoder::Opcode$< I_MULSD >::Encode(instr, is64_)); break;
             case I_MULSS:               JITASM_ASSERT(encoder::Opcode$< I_MULSS >::Encode(instr, is64_)); break;
             case I_MULX:                JITASM_ASSERT(encoder::Opcode$< I_MULX >::Encode(instr, is64_)); break;
-            case I_FMUL:                JITASM_ASSERT(encoder::Opcode$< I_FMUL >::Encode(instr, is64_)); break;
-            case I_FIMUL:               JITASM_ASSERT(encoder::Opcode$< I_FIMUL >::Encode(instr, is64_)); break;
-            case I_FMULP:               JITASM_ASSERT(encoder::Opcode$< I_FMULP >::Encode(instr, is64_)); break;
             case I_MWAIT:               JITASM_ASSERT(encoder::Opcode$< I_MWAIT >::Encode(instr, is64_)); break;
             case I_NEG:                 JITASM_ASSERT(encoder::Opcode$< I_NEG >::Encode(instr, is64_)); break;
             case I_NOP:                 JITASM_ASSERT(encoder::Opcode$< I_NOP >::Encode(instr, is64_)); break;
             case I_NOT:                 JITASM_ASSERT(encoder::Opcode$< I_NOT >::Encode(instr, is64_)); break;
+            case I_OR:                  JITASM_ASSERT(encoder::Opcode$< I_OR >::Encode(instr, is64_)); break;
+            case I_ORPD:                JITASM_ASSERT(encoder::Opcode$< I_ORPD >::Encode(instr, is64_)); break;
+            case I_ORPS:                JITASM_ASSERT(encoder::Opcode$< I_ORPS >::Encode(instr, is64_)); break;
             case I_OUT:                 JITASM_ASSERT(encoder::Opcode$< I_OUT >::Encode(instr, is64_)); break;
-            case I_OUTSB:               JITASM_ASSERT(encoder::Opcode$< I_OUTSB >::Encode(instr, is64_)); break;
-            case I_OUTSD:               JITASM_ASSERT(encoder::Opcode$< I_OUTSD >::Encode(instr, is64_)); break;
-            case I_OUTSW:               JITASM_ASSERT(encoder::Opcode$< I_OUTSW >::Encode(instr, is64_)); break;
+            case I_OUTS:                JITASM_ASSERT(encoder::Opcode$< I_OUTS >::Encode(instr, is64_)); break;
+            case I_PABSB:               JITASM_ASSERT(encoder::Opcode$< I_PABSB >::Encode(instr, is64_)); break;
+            case I_PABSD:               JITASM_ASSERT(encoder::Opcode$< I_PABSD >::Encode(instr, is64_)); break;
+            case I_PABSW:               JITASM_ASSERT(encoder::Opcode$< I_PABSW >::Encode(instr, is64_)); break;
+            case I_PACKSSDW:            JITASM_ASSERT(encoder::Opcode$< I_PACKSSDW >::Encode(instr, is64_)); break;
+            case I_PACKSSWB:            JITASM_ASSERT(encoder::Opcode$< I_PACKSSWB >::Encode(instr, is64_)); break;
             case I_PACKUSDW:            JITASM_ASSERT(encoder::Opcode$< I_PACKUSDW >::Encode(instr, is64_)); break;
+            case I_PACKUSWB:            JITASM_ASSERT(encoder::Opcode$< I_PACKUSWB >::Encode(instr, is64_)); break;
+            case I_PADDB:               JITASM_ASSERT(encoder::Opcode$< I_PADDB >::Encode(instr, is64_)); break;
+            case I_PADDD:               JITASM_ASSERT(encoder::Opcode$< I_PADDD >::Encode(instr, is64_)); break;
+            case I_PADDQ:               JITASM_ASSERT(encoder::Opcode$< I_PADDQ >::Encode(instr, is64_)); break;
+            case I_PADDSB:              JITASM_ASSERT(encoder::Opcode$< I_PADDSB >::Encode(instr, is64_)); break;
+            case I_PADDSW:              JITASM_ASSERT(encoder::Opcode$< I_PADDSW >::Encode(instr, is64_)); break;
+            case I_PADDUSB:             JITASM_ASSERT(encoder::Opcode$< I_PADDUSB >::Encode(instr, is64_)); break;
+            case I_PADDUSW:             JITASM_ASSERT(encoder::Opcode$< I_PADDUSW >::Encode(instr, is64_)); break;
+            case I_PADDW:               JITASM_ASSERT(encoder::Opcode$< I_PADDW >::Encode(instr, is64_)); break;
+            case I_PALIGNR:             JITASM_ASSERT(encoder::Opcode$< I_PALIGNR >::Encode(instr, is64_)); break;
+            case I_PAND:                JITASM_ASSERT(encoder::Opcode$< I_PAND >::Encode(instr, is64_)); break;
+            case I_PANDN:               JITASM_ASSERT(encoder::Opcode$< I_PANDN >::Encode(instr, is64_)); break;
             case I_PAUSE:               JITASM_ASSERT(encoder::Opcode$< I_PAUSE >::Encode(instr, is64_)); break;
+            case I_PAVGB:               JITASM_ASSERT(encoder::Opcode$< I_PAVGB >::Encode(instr, is64_)); break;
             case I_PAVGUSB:             JITASM_ASSERT(encoder::Opcode$< I_PAVGUSB >::Encode(instr, is64_)); break;
+            case I_PAVGW:               JITASM_ASSERT(encoder::Opcode$< I_PAVGW >::Encode(instr, is64_)); break;
             case I_PBLENDVB:            JITASM_ASSERT(encoder::Opcode$< I_PBLENDVB >::Encode(instr, is64_)); break;
             case I_PBLENDW:             JITASM_ASSERT(encoder::Opcode$< I_PBLENDW >::Encode(instr, is64_)); break;
             case I_PCLMULQDQ:           JITASM_ASSERT(encoder::Opcode$< I_PCLMULQDQ >::Encode(instr, is64_)); break;
+            case I_PCMPEQB:             JITASM_ASSERT(encoder::Opcode$< I_PCMPEQB >::Encode(instr, is64_)); break;
+            case I_PCMPEQD:             JITASM_ASSERT(encoder::Opcode$< I_PCMPEQD >::Encode(instr, is64_)); break;
             case I_PCMPEQQ:             JITASM_ASSERT(encoder::Opcode$< I_PCMPEQQ >::Encode(instr, is64_)); break;
+            case I_PCMPEQW:             JITASM_ASSERT(encoder::Opcode$< I_PCMPEQW >::Encode(instr, is64_)); break;
             case I_PCMPESTRI:           JITASM_ASSERT(encoder::Opcode$< I_PCMPESTRI >::Encode(instr, is64_)); break;
             case I_PCMPESTRM:           JITASM_ASSERT(encoder::Opcode$< I_PCMPESTRM >::Encode(instr, is64_)); break;
+            case I_PCMPGTB:             JITASM_ASSERT(encoder::Opcode$< I_PCMPGTB >::Encode(instr, is64_)); break;
+            case I_PCMPGTD:             JITASM_ASSERT(encoder::Opcode$< I_PCMPGTD >::Encode(instr, is64_)); break;
             case I_PCMPGTQ:             JITASM_ASSERT(encoder::Opcode$< I_PCMPGTQ >::Encode(instr, is64_)); break;
+            case I_PCMPGTW:             JITASM_ASSERT(encoder::Opcode$< I_PCMPGTW >::Encode(instr, is64_)); break;
             case I_PCMPISTRI:           JITASM_ASSERT(encoder::Opcode$< I_PCMPISTRI >::Encode(instr, is64_)); break;
             case I_PCMPISTRM:           JITASM_ASSERT(encoder::Opcode$< I_PCMPISTRM >::Encode(instr, is64_)); break;
             case I_PDEP:                JITASM_ASSERT(encoder::Opcode$< I_PDEP >::Encode(instr, is64_)); break;
@@ -2062,6 +914,7 @@ namespace jitasm
             case I_PEXTRB:              JITASM_ASSERT(encoder::Opcode$< I_PEXTRB >::Encode(instr, is64_)); break;
             case I_PEXTRD:              JITASM_ASSERT(encoder::Opcode$< I_PEXTRD >::Encode(instr, is64_)); break;
             case I_PEXTRQ:              JITASM_ASSERT(encoder::Opcode$< I_PEXTRQ >::Encode(instr, is64_)); break;
+            case I_PEXTRW:              JITASM_ASSERT(encoder::Opcode$< I_PEXTRW >::Encode(instr, is64_)); break;
             case I_PF2ID:               JITASM_ASSERT(encoder::Opcode$< I_PF2ID >::Encode(instr, is64_)); break;
             case I_PF2IW:               JITASM_ASSERT(encoder::Opcode$< I_PF2IW >::Encode(instr, is64_)); break;
             case I_PFACC:               JITASM_ASSERT(encoder::Opcode$< I_PFACC >::Encode(instr, is64_)); break;
@@ -2074,27 +927,41 @@ namespace jitasm
             case I_PFMUL:               JITASM_ASSERT(encoder::Opcode$< I_PFMUL >::Encode(instr, is64_)); break;
             case I_PFNACC:              JITASM_ASSERT(encoder::Opcode$< I_PFNACC >::Encode(instr, is64_)); break;
             case I_PFPNACC:             JITASM_ASSERT(encoder::Opcode$< I_PFPNACC >::Encode(instr, is64_)); break;
+            case I_PFRCP:               JITASM_ASSERT(encoder::Opcode$< I_PFRCP >::Encode(instr, is64_)); break;
             case I_PFRCPIT1:            JITASM_ASSERT(encoder::Opcode$< I_PFRCPIT1 >::Encode(instr, is64_)); break;
             case I_PFRCPIT2:            JITASM_ASSERT(encoder::Opcode$< I_PFRCPIT2 >::Encode(instr, is64_)); break;
-            case I_PFRCP:               JITASM_ASSERT(encoder::Opcode$< I_PFRCP >::Encode(instr, is64_)); break;
             case I_PFRSQIT1:            JITASM_ASSERT(encoder::Opcode$< I_PFRSQIT1 >::Encode(instr, is64_)); break;
             case I_PFRSQRT:             JITASM_ASSERT(encoder::Opcode$< I_PFRSQRT >::Encode(instr, is64_)); break;
-            case I_PFSUBR:              JITASM_ASSERT(encoder::Opcode$< I_PFSUBR >::Encode(instr, is64_)); break;
             case I_PFSUB:               JITASM_ASSERT(encoder::Opcode$< I_PFSUB >::Encode(instr, is64_)); break;
+            case I_PFSUBR:              JITASM_ASSERT(encoder::Opcode$< I_PFSUBR >::Encode(instr, is64_)); break;
+            case I_PHADDD:              JITASM_ASSERT(encoder::Opcode$< I_PHADDD >::Encode(instr, is64_)); break;
+            case I_PHADDSW:             JITASM_ASSERT(encoder::Opcode$< I_PHADDSW >::Encode(instr, is64_)); break;
+            case I_PHADDW:              JITASM_ASSERT(encoder::Opcode$< I_PHADDW >::Encode(instr, is64_)); break;
             case I_PHMINPOSUW:          JITASM_ASSERT(encoder::Opcode$< I_PHMINPOSUW >::Encode(instr, is64_)); break;
+            case I_PHSUBD:              JITASM_ASSERT(encoder::Opcode$< I_PHSUBD >::Encode(instr, is64_)); break;
+            case I_PHSUBSW:             JITASM_ASSERT(encoder::Opcode$< I_PHSUBSW >::Encode(instr, is64_)); break;
+            case I_PHSUBW:              JITASM_ASSERT(encoder::Opcode$< I_PHSUBW >::Encode(instr, is64_)); break;
             case I_PI2FD:               JITASM_ASSERT(encoder::Opcode$< I_PI2FD >::Encode(instr, is64_)); break;
             case I_PI2FW:               JITASM_ASSERT(encoder::Opcode$< I_PI2FW >::Encode(instr, is64_)); break;
             case I_PINSRB:              JITASM_ASSERT(encoder::Opcode$< I_PINSRB >::Encode(instr, is64_)); break;
             case I_PINSRD:              JITASM_ASSERT(encoder::Opcode$< I_PINSRD >::Encode(instr, is64_)); break;
             case I_PINSRQ:              JITASM_ASSERT(encoder::Opcode$< I_PINSRQ >::Encode(instr, is64_)); break;
+            case I_PINSRW:              JITASM_ASSERT(encoder::Opcode$< I_PINSRW >::Encode(instr, is64_)); break;
+            case I_PMADDUBSW:           JITASM_ASSERT(encoder::Opcode$< I_PMADDUBSW >::Encode(instr, is64_)); break;
+            case I_PMADDWD:             JITASM_ASSERT(encoder::Opcode$< I_PMADDWD >::Encode(instr, is64_)); break;
             case I_PMAXSB:              JITASM_ASSERT(encoder::Opcode$< I_PMAXSB >::Encode(instr, is64_)); break;
             case I_PMAXSD:              JITASM_ASSERT(encoder::Opcode$< I_PMAXSD >::Encode(instr, is64_)); break;
+            case I_PMAXSW:              JITASM_ASSERT(encoder::Opcode$< I_PMAXSW >::Encode(instr, is64_)); break;
+            case I_PMAXUB:              JITASM_ASSERT(encoder::Opcode$< I_PMAXUB >::Encode(instr, is64_)); break;
             case I_PMAXUD:              JITASM_ASSERT(encoder::Opcode$< I_PMAXUD >::Encode(instr, is64_)); break;
             case I_PMAXUW:              JITASM_ASSERT(encoder::Opcode$< I_PMAXUW >::Encode(instr, is64_)); break;
             case I_PMINSB:              JITASM_ASSERT(encoder::Opcode$< I_PMINSB >::Encode(instr, is64_)); break;
             case I_PMINSD:              JITASM_ASSERT(encoder::Opcode$< I_PMINSD >::Encode(instr, is64_)); break;
+            case I_PMINSW:              JITASM_ASSERT(encoder::Opcode$< I_PMINSW >::Encode(instr, is64_)); break;
+            case I_PMINUB:              JITASM_ASSERT(encoder::Opcode$< I_PMINUB >::Encode(instr, is64_)); break;
             case I_PMINUD:              JITASM_ASSERT(encoder::Opcode$< I_PMINUD >::Encode(instr, is64_)); break;
             case I_PMINUW:              JITASM_ASSERT(encoder::Opcode$< I_PMINUW >::Encode(instr, is64_)); break;
+            case I_PMOVMSKB:            JITASM_ASSERT(encoder::Opcode$< I_PMOVMSKB >::Encode(instr, is64_)); break;
             case I_PMOVSXBD:            JITASM_ASSERT(encoder::Opcode$< I_PMOVSXBD >::Encode(instr, is64_)); break;
             case I_PMOVSXBQ:            JITASM_ASSERT(encoder::Opcode$< I_PMOVSXBQ >::Encode(instr, is64_)); break;
             case I_PMOVSXBW:            JITASM_ASSERT(encoder::Opcode$< I_PMOVSXBW >::Encode(instr, is64_)); break;
@@ -2108,36 +975,71 @@ namespace jitasm
             case I_PMOVZXWD:            JITASM_ASSERT(encoder::Opcode$< I_PMOVZXWD >::Encode(instr, is64_)); break;
             case I_PMOVZXWQ:            JITASM_ASSERT(encoder::Opcode$< I_PMOVZXWQ >::Encode(instr, is64_)); break;
             case I_PMULDQ:              JITASM_ASSERT(encoder::Opcode$< I_PMULDQ >::Encode(instr, is64_)); break;
+            case I_PMULHRSW:            JITASM_ASSERT(encoder::Opcode$< I_PMULHRSW >::Encode(instr, is64_)); break;
             case I_PMULHRW:             JITASM_ASSERT(encoder::Opcode$< I_PMULHRW >::Encode(instr, is64_)); break;
+            case I_PMULHUW:             JITASM_ASSERT(encoder::Opcode$< I_PMULHUW >::Encode(instr, is64_)); break;
+            case I_PMULHW:              JITASM_ASSERT(encoder::Opcode$< I_PMULHW >::Encode(instr, is64_)); break;
             case I_PMULLD:              JITASM_ASSERT(encoder::Opcode$< I_PMULLD >::Encode(instr, is64_)); break;
+            case I_PMULLW:              JITASM_ASSERT(encoder::Opcode$< I_PMULLW >::Encode(instr, is64_)); break;
+            case I_PMULUDQ:             JITASM_ASSERT(encoder::Opcode$< I_PMULUDQ >::Encode(instr, is64_)); break;
             case I_POP:                 JITASM_ASSERT(encoder::Opcode$< I_POP >::Encode(instr, is64_)); break;
-            case I_POPAW:               JITASM_ASSERT(encoder::Opcode$< I_POPAW >::Encode(instr, is64_)); break;
             case I_POPAL:               JITASM_ASSERT(encoder::Opcode$< I_POPAL >::Encode(instr, is64_)); break;
+            case I_POPAW:               JITASM_ASSERT(encoder::Opcode$< I_POPAW >::Encode(instr, is64_)); break;
             case I_POPCNT:              JITASM_ASSERT(encoder::Opcode$< I_POPCNT >::Encode(instr, is64_)); break;
             case I_POPF:                JITASM_ASSERT(encoder::Opcode$< I_POPF >::Encode(instr, is64_)); break;
             case I_POPFD:               JITASM_ASSERT(encoder::Opcode$< I_POPFD >::Encode(instr, is64_)); break;
             case I_POPFQ:               JITASM_ASSERT(encoder::Opcode$< I_POPFQ >::Encode(instr, is64_)); break;
+            case I_POR:                 JITASM_ASSERT(encoder::Opcode$< I_POR >::Encode(instr, is64_)); break;
             case I_PREFETCH:            JITASM_ASSERT(encoder::Opcode$< I_PREFETCH >::Encode(instr, is64_)); break;
             case I_PREFETCHNTA:         JITASM_ASSERT(encoder::Opcode$< I_PREFETCHNTA >::Encode(instr, is64_)); break;
             case I_PREFETCHT0:          JITASM_ASSERT(encoder::Opcode$< I_PREFETCHT0 >::Encode(instr, is64_)); break;
             case I_PREFETCHT1:          JITASM_ASSERT(encoder::Opcode$< I_PREFETCHT1 >::Encode(instr, is64_)); break;
             case I_PREFETCHT2:          JITASM_ASSERT(encoder::Opcode$< I_PREFETCHT2 >::Encode(instr, is64_)); break;
             case I_PREFETCHW:           JITASM_ASSERT(encoder::Opcode$< I_PREFETCHW >::Encode(instr, is64_)); break;
+            case I_PSADBW:              JITASM_ASSERT(encoder::Opcode$< I_PSADBW >::Encode(instr, is64_)); break;
+            case I_PSHUFB:              JITASM_ASSERT(encoder::Opcode$< I_PSHUFB >::Encode(instr, is64_)); break;
             case I_PSHUFD:              JITASM_ASSERT(encoder::Opcode$< I_PSHUFD >::Encode(instr, is64_)); break;
             case I_PSHUFHW:             JITASM_ASSERT(encoder::Opcode$< I_PSHUFHW >::Encode(instr, is64_)); break;
             case I_PSHUFLW:             JITASM_ASSERT(encoder::Opcode$< I_PSHUFLW >::Encode(instr, is64_)); break;
+            case I_PSHUFW:              JITASM_ASSERT(encoder::Opcode$< I_PSHUFW >::Encode(instr, is64_)); break;
+            case I_PSIGNB:              JITASM_ASSERT(encoder::Opcode$< I_PSIGNB >::Encode(instr, is64_)); break;
+            case I_PSIGND:              JITASM_ASSERT(encoder::Opcode$< I_PSIGND >::Encode(instr, is64_)); break;
+            case I_PSIGNW:              JITASM_ASSERT(encoder::Opcode$< I_PSIGNW >::Encode(instr, is64_)); break;
+            case I_PSLLD:               JITASM_ASSERT(encoder::Opcode$< I_PSLLD >::Encode(instr, is64_)); break;
             case I_PSLLDQ:              JITASM_ASSERT(encoder::Opcode$< I_PSLLDQ >::Encode(instr, is64_)); break;
+            case I_PSLLQ:               JITASM_ASSERT(encoder::Opcode$< I_PSLLQ >::Encode(instr, is64_)); break;
+            case I_PSLLW:               JITASM_ASSERT(encoder::Opcode$< I_PSLLW >::Encode(instr, is64_)); break;
+            case I_PSRAD:               JITASM_ASSERT(encoder::Opcode$< I_PSRAD >::Encode(instr, is64_)); break;
+            case I_PSRAW:               JITASM_ASSERT(encoder::Opcode$< I_PSRAW >::Encode(instr, is64_)); break;
+            case I_PSRLD:               JITASM_ASSERT(encoder::Opcode$< I_PSRLD >::Encode(instr, is64_)); break;
             case I_PSRLDQ:              JITASM_ASSERT(encoder::Opcode$< I_PSRLDQ >::Encode(instr, is64_)); break;
+            case I_PSRLQ:               JITASM_ASSERT(encoder::Opcode$< I_PSRLQ >::Encode(instr, is64_)); break;
+            case I_PSRLW:               JITASM_ASSERT(encoder::Opcode$< I_PSRLW >::Encode(instr, is64_)); break;
+            case I_PSUBB:               JITASM_ASSERT(encoder::Opcode$< I_PSUBB >::Encode(instr, is64_)); break;
+            case I_PSUBD:               JITASM_ASSERT(encoder::Opcode$< I_PSUBD >::Encode(instr, is64_)); break;
+            case I_PSUBQ:               JITASM_ASSERT(encoder::Opcode$< I_PSUBQ >::Encode(instr, is64_)); break;
+            case I_PSUBSB:              JITASM_ASSERT(encoder::Opcode$< I_PSUBSB >::Encode(instr, is64_)); break;
+            case I_PSUBSW:              JITASM_ASSERT(encoder::Opcode$< I_PSUBSW >::Encode(instr, is64_)); break;
+            case I_PSUBUSB:             JITASM_ASSERT(encoder::Opcode$< I_PSUBUSB >::Encode(instr, is64_)); break;
+            case I_PSUBUSW:             JITASM_ASSERT(encoder::Opcode$< I_PSUBUSW >::Encode(instr, is64_)); break;
+            case I_PSUBW:               JITASM_ASSERT(encoder::Opcode$< I_PSUBW >::Encode(instr, is64_)); break;
             case I_PSWAPD:              JITASM_ASSERT(encoder::Opcode$< I_PSWAPD >::Encode(instr, is64_)); break;
             case I_PTEST:               JITASM_ASSERT(encoder::Opcode$< I_PTEST >::Encode(instr, is64_)); break;
+            case I_PUNPCKHBW:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKHBW >::Encode(instr, is64_)); break;
+            case I_PUNPCKHDQ:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKHDQ >::Encode(instr, is64_)); break;
             case I_PUNPCKHQDQ:          JITASM_ASSERT(encoder::Opcode$< I_PUNPCKHQDQ >::Encode(instr, is64_)); break;
+            case I_PUNPCKHWD:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKHWD >::Encode(instr, is64_)); break;
+            case I_PUNPCKLBW:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKLBW >::Encode(instr, is64_)); break;
+            case I_PUNPCKLDQ:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKLDQ >::Encode(instr, is64_)); break;
             case I_PUNPCKLQDQ:          JITASM_ASSERT(encoder::Opcode$< I_PUNPCKLQDQ >::Encode(instr, is64_)); break;
+            case I_PUNPCKLWD:           JITASM_ASSERT(encoder::Opcode$< I_PUNPCKLWD >::Encode(instr, is64_)); break;
             case I_PUSH:                JITASM_ASSERT(encoder::Opcode$< I_PUSH >::Encode(instr, is64_)); break;
-            case I_PUSHAW:              JITASM_ASSERT(encoder::Opcode$< I_PUSHAW >::Encode(instr, is64_)); break;
             case I_PUSHAL:              JITASM_ASSERT(encoder::Opcode$< I_PUSHAL >::Encode(instr, is64_)); break;
+            case I_PUSHAW:              JITASM_ASSERT(encoder::Opcode$< I_PUSHAW >::Encode(instr, is64_)); break;
             case I_PUSHF:               JITASM_ASSERT(encoder::Opcode$< I_PUSHF >::Encode(instr, is64_)); break;
             case I_PUSHFD:              JITASM_ASSERT(encoder::Opcode$< I_PUSHFD >::Encode(instr, is64_)); break;
             case I_PUSHFQ:              JITASM_ASSERT(encoder::Opcode$< I_PUSHFQ >::Encode(instr, is64_)); break;
+            case I_PXOR:                JITASM_ASSERT(encoder::Opcode$< I_PXOR >::Encode(instr, is64_)); break;
             case I_RCL:                 JITASM_ASSERT(encoder::Opcode$< I_RCL >::Encode(instr, is64_)); break;
             case I_RCPPS:               JITASM_ASSERT(encoder::Opcode$< I_RCPPS >::Encode(instr, is64_)); break;
             case I_RCPSS:               JITASM_ASSERT(encoder::Opcode$< I_RCPSS >::Encode(instr, is64_)); break;
@@ -2150,8 +1052,11 @@ namespace jitasm
             case I_RDSEED:              JITASM_ASSERT(encoder::Opcode$< I_RDSEED >::Encode(instr, is64_)); break;
             case I_RDTSC:               JITASM_ASSERT(encoder::Opcode$< I_RDTSC >::Encode(instr, is64_)); break;
             case I_RDTSCP:              JITASM_ASSERT(encoder::Opcode$< I_RDTSCP >::Encode(instr, is64_)); break;
-            case I_REPNE:               JITASM_ASSERT(encoder::Opcode$< I_REPNE >::Encode(instr, is64_)); break;
             case I_REP:                 JITASM_ASSERT(encoder::Opcode$< I_REP >::Encode(instr, is64_)); break;
+            case I_REPNE:               JITASM_ASSERT(encoder::Opcode$< I_REPNE >::Encode(instr, is64_)); break;
+            case I_RET:                 JITASM_ASSERT(encoder::Opcode$< I_RET >::Encode(instr, is64_)); break;
+            case I_RETF:                JITASM_ASSERT(encoder::Opcode$< I_RETF >::Encode(instr, is64_)); break;
+            case I_RETFQ:               JITASM_ASSERT(encoder::Opcode$< I_RETFQ >::Encode(instr, is64_)); break;
             case I_ROL:                 JITASM_ASSERT(encoder::Opcode$< I_ROL >::Encode(instr, is64_)); break;
             case I_ROR:                 JITASM_ASSERT(encoder::Opcode$< I_ROR >::Encode(instr, is64_)); break;
             case I_RORX:                JITASM_ASSERT(encoder::Opcode$< I_RORX >::Encode(instr, is64_)); break;
@@ -2188,7 +1093,6 @@ namespace jitasm
             case I_SHUFPD:              JITASM_ASSERT(encoder::Opcode$< I_SHUFPD >::Encode(instr, is64_)); break;
             case I_SHUFPS:              JITASM_ASSERT(encoder::Opcode$< I_SHUFPS >::Encode(instr, is64_)); break;
             case I_SIDT:                JITASM_ASSERT(encoder::Opcode$< I_SIDT >::Encode(instr, is64_)); break;
-            case I_FSIN:                JITASM_ASSERT(encoder::Opcode$< I_FSIN >::Encode(instr, is64_)); break;
             case I_SKINIT:              JITASM_ASSERT(encoder::Opcode$< I_SKINIT >::Encode(instr, is64_)); break;
             case I_SLDT:                JITASM_ASSERT(encoder::Opcode$< I_SLDT >::Encode(instr, is64_)); break;
             case I_SMSW:                JITASM_ASSERT(encoder::Opcode$< I_SMSW >::Encode(instr, is64_)); break;
@@ -2196,7 +1100,6 @@ namespace jitasm
             case I_SQRTPS:              JITASM_ASSERT(encoder::Opcode$< I_SQRTPS >::Encode(instr, is64_)); break;
             case I_SQRTSD:              JITASM_ASSERT(encoder::Opcode$< I_SQRTSD >::Encode(instr, is64_)); break;
             case I_SQRTSS:              JITASM_ASSERT(encoder::Opcode$< I_SQRTSS >::Encode(instr, is64_)); break;
-            case I_FSQRT:               JITASM_ASSERT(encoder::Opcode$< I_FSQRT >::Encode(instr, is64_)); break;
             case I_STAC:                JITASM_ASSERT(encoder::Opcode$< I_STAC >::Encode(instr, is64_)); break;
             case I_STC:                 JITASM_ASSERT(encoder::Opcode$< I_STC >::Encode(instr, is64_)); break;
             case I_STD:                 JITASM_ASSERT(encoder::Opcode$< I_STD >::Encode(instr, is64_)); break;
@@ -2205,19 +1108,11 @@ namespace jitasm
             case I_STMXCSR:             JITASM_ASSERT(encoder::Opcode$< I_STMXCSR >::Encode(instr, is64_)); break;
             case I_STOS:                JITASM_ASSERT(encoder::Opcode$< I_STOS >::Encode(instr, is64_)); break;
             case I_STR:                 JITASM_ASSERT(encoder::Opcode$< I_STR >::Encode(instr, is64_)); break;
-            case I_FST:                 JITASM_ASSERT(encoder::Opcode$< I_FST >::Encode(instr, is64_)); break;
-            case I_FSTP:                JITASM_ASSERT(encoder::Opcode$< I_FSTP >::Encode(instr, is64_)); break;
-            case I_FSTPNCE:             JITASM_ASSERT(encoder::Opcode$< I_FSTPNCE >::Encode(instr, is64_)); break;
+            case I_SUB:                 JITASM_ASSERT(encoder::Opcode$< I_SUB >::Encode(instr, is64_)); break;
             case I_SUBPD:               JITASM_ASSERT(encoder::Opcode$< I_SUBPD >::Encode(instr, is64_)); break;
             case I_SUBPS:               JITASM_ASSERT(encoder::Opcode$< I_SUBPS >::Encode(instr, is64_)); break;
-            case I_FSUBR:               JITASM_ASSERT(encoder::Opcode$< I_FSUBR >::Encode(instr, is64_)); break;
-            case I_FISUBR:              JITASM_ASSERT(encoder::Opcode$< I_FISUBR >::Encode(instr, is64_)); break;
-            case I_FSUBRP:              JITASM_ASSERT(encoder::Opcode$< I_FSUBRP >::Encode(instr, is64_)); break;
             case I_SUBSD:               JITASM_ASSERT(encoder::Opcode$< I_SUBSD >::Encode(instr, is64_)); break;
             case I_SUBSS:               JITASM_ASSERT(encoder::Opcode$< I_SUBSS >::Encode(instr, is64_)); break;
-            case I_FSUB:                JITASM_ASSERT(encoder::Opcode$< I_FSUB >::Encode(instr, is64_)); break;
-            case I_FISUB:               JITASM_ASSERT(encoder::Opcode$< I_FISUB >::Encode(instr, is64_)); break;
-            case I_FSUBP:               JITASM_ASSERT(encoder::Opcode$< I_FSUBP >::Encode(instr, is64_)); break;
             case I_SWAPGS:              JITASM_ASSERT(encoder::Opcode$< I_SWAPGS >::Encode(instr, is64_)); break;
             case I_SYSCALL:             JITASM_ASSERT(encoder::Opcode$< I_SYSCALL >::Encode(instr, is64_)); break;
             case I_SYSENTER:            JITASM_ASSERT(encoder::Opcode$< I_SYSENTER >::Encode(instr, is64_)); break;
@@ -2225,15 +1120,11 @@ namespace jitasm
             case I_SYSRET:              JITASM_ASSERT(encoder::Opcode$< I_SYSRET >::Encode(instr, is64_)); break;
             case I_T1MSKC:              JITASM_ASSERT(encoder::Opcode$< I_T1MSKC >::Encode(instr, is64_)); break;
             case I_TEST:                JITASM_ASSERT(encoder::Opcode$< I_TEST >::Encode(instr, is64_)); break;
-            case I_UD2:                 JITASM_ASSERT(encoder::Opcode$< I_UD2 >::Encode(instr, is64_)); break;
-            case I_FTST:                JITASM_ASSERT(encoder::Opcode$< I_FTST >::Encode(instr, is64_)); break;
             case I_TZCNT:               JITASM_ASSERT(encoder::Opcode$< I_TZCNT >::Encode(instr, is64_)); break;
             case I_TZMSK:               JITASM_ASSERT(encoder::Opcode$< I_TZMSK >::Encode(instr, is64_)); break;
-            case I_FUCOMPI:             JITASM_ASSERT(encoder::Opcode$< I_FUCOMPI >::Encode(instr, is64_)); break;
-            case I_FUCOMI:              JITASM_ASSERT(encoder::Opcode$< I_FUCOMI >::Encode(instr, is64_)); break;
-            case I_FUCOMPP:             JITASM_ASSERT(encoder::Opcode$< I_FUCOMPP >::Encode(instr, is64_)); break;
-            case I_FUCOMP:              JITASM_ASSERT(encoder::Opcode$< I_FUCOMP >::Encode(instr, is64_)); break;
-            case I_FUCOM:               JITASM_ASSERT(encoder::Opcode$< I_FUCOM >::Encode(instr, is64_)); break;
+            case I_UCOMISD:             JITASM_ASSERT(encoder::Opcode$< I_UCOMISD >::Encode(instr, is64_)); break;
+            case I_UCOMISS:             JITASM_ASSERT(encoder::Opcode$< I_UCOMISS >::Encode(instr, is64_)); break;
+            case I_UD2:                 JITASM_ASSERT(encoder::Opcode$< I_UD2 >::Encode(instr, is64_)); break;
             case I_UD2B:                JITASM_ASSERT(encoder::Opcode$< I_UD2B >::Encode(instr, is64_)); break;
             case I_UNPCKHPD:            JITASM_ASSERT(encoder::Opcode$< I_UNPCKHPD >::Encode(instr, is64_)); break;
             case I_UNPCKHPS:            JITASM_ASSERT(encoder::Opcode$< I_UNPCKHPS >::Encode(instr, is64_)); break;
@@ -2245,10 +1136,10 @@ namespace jitasm
             case I_VADDSS:              JITASM_ASSERT(encoder::Opcode$< I_VADDSS >::Encode(instr, is64_)); break;
             case I_VADDSUBPD:           JITASM_ASSERT(encoder::Opcode$< I_VADDSUBPD >::Encode(instr, is64_)); break;
             case I_VADDSUBPS:           JITASM_ASSERT(encoder::Opcode$< I_VADDSUBPS >::Encode(instr, is64_)); break;
-            case I_VAESDECLAST:         JITASM_ASSERT(encoder::Opcode$< I_VAESDECLAST >::Encode(instr, is64_)); break;
             case I_VAESDEC:             JITASM_ASSERT(encoder::Opcode$< I_VAESDEC >::Encode(instr, is64_)); break;
-            case I_VAESENCLAST:         JITASM_ASSERT(encoder::Opcode$< I_VAESENCLAST >::Encode(instr, is64_)); break;
+            case I_VAESDECLAST:         JITASM_ASSERT(encoder::Opcode$< I_VAESDECLAST >::Encode(instr, is64_)); break;
             case I_VAESENC:             JITASM_ASSERT(encoder::Opcode$< I_VAESENC >::Encode(instr, is64_)); break;
+            case I_VAESENCLAST:         JITASM_ASSERT(encoder::Opcode$< I_VAESENCLAST >::Encode(instr, is64_)); break;
             case I_VAESIMC:             JITASM_ASSERT(encoder::Opcode$< I_VAESIMC >::Encode(instr, is64_)); break;
             case I_VAESKEYGENASSIST:    JITASM_ASSERT(encoder::Opcode$< I_VAESKEYGENASSIST >::Encode(instr, is64_)); break;
             case I_VALIGND:             JITASM_ASSERT(encoder::Opcode$< I_VALIGND >::Encode(instr, is64_)); break;
@@ -2269,16 +1160,19 @@ namespace jitasm
             case I_VBROADCASTI64X4:     JITASM_ASSERT(encoder::Opcode$< I_VBROADCASTI64X4 >::Encode(instr, is64_)); break;
             case I_VBROADCASTSD:        JITASM_ASSERT(encoder::Opcode$< I_VBROADCASTSD >::Encode(instr, is64_)); break;
             case I_VBROADCASTSS:        JITASM_ASSERT(encoder::Opcode$< I_VBROADCASTSS >::Encode(instr, is64_)); break;
+            case I_VCMP:                JITASM_ASSERT(encoder::Opcode$< I_VCMP >::Encode(instr, is64_)); break;
             case I_VCMPPD:              JITASM_ASSERT(encoder::Opcode$< I_VCMPPD >::Encode(instr, is64_)); break;
             case I_VCMPPS:              JITASM_ASSERT(encoder::Opcode$< I_VCMPPS >::Encode(instr, is64_)); break;
             case I_VCMPSD:              JITASM_ASSERT(encoder::Opcode$< I_VCMPSD >::Encode(instr, is64_)); break;
             case I_VCMPSS:              JITASM_ASSERT(encoder::Opcode$< I_VCMPSS >::Encode(instr, is64_)); break;
+            case I_VCOMISD:             JITASM_ASSERT(encoder::Opcode$< I_VCOMISD >::Encode(instr, is64_)); break;
+            case I_VCOMISS:             JITASM_ASSERT(encoder::Opcode$< I_VCOMISS >::Encode(instr, is64_)); break;
             case I_VCVTDQ2PD:           JITASM_ASSERT(encoder::Opcode$< I_VCVTDQ2PD >::Encode(instr, is64_)); break;
             case I_VCVTDQ2PS:           JITASM_ASSERT(encoder::Opcode$< I_VCVTDQ2PS >::Encode(instr, is64_)); break;
-            case I_VCVTPD2DQX:          JITASM_ASSERT(encoder::Opcode$< I_VCVTPD2DQX >::Encode(instr, is64_)); break;
             case I_VCVTPD2DQ:           JITASM_ASSERT(encoder::Opcode$< I_VCVTPD2DQ >::Encode(instr, is64_)); break;
-            case I_VCVTPD2PSX:          JITASM_ASSERT(encoder::Opcode$< I_VCVTPD2PSX >::Encode(instr, is64_)); break;
+            case I_VCVTPD2DQX:          JITASM_ASSERT(encoder::Opcode$< I_VCVTPD2DQX >::Encode(instr, is64_)); break;
             case I_VCVTPD2PS:           JITASM_ASSERT(encoder::Opcode$< I_VCVTPD2PS >::Encode(instr, is64_)); break;
+            case I_VCVTPD2PSX:          JITASM_ASSERT(encoder::Opcode$< I_VCVTPD2PSX >::Encode(instr, is64_)); break;
             case I_VCVTPD2UDQ:          JITASM_ASSERT(encoder::Opcode$< I_VCVTPD2UDQ >::Encode(instr, is64_)); break;
             case I_VCVTPH2PS:           JITASM_ASSERT(encoder::Opcode$< I_VCVTPH2PS >::Encode(instr, is64_)); break;
             case I_VCVTPS2DQ:           JITASM_ASSERT(encoder::Opcode$< I_VCVTPS2DQ >::Encode(instr, is64_)); break;
@@ -2286,16 +1180,26 @@ namespace jitasm
             case I_VCVTPS2PH:           JITASM_ASSERT(encoder::Opcode$< I_VCVTPS2PH >::Encode(instr, is64_)); break;
             case I_VCVTPS2UDQ:          JITASM_ASSERT(encoder::Opcode$< I_VCVTPS2UDQ >::Encode(instr, is64_)); break;
             case I_VCVTSD2SI:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSD2SI >::Encode(instr, is64_)); break;
+            case I_VCVTSD2SS:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSD2SS >::Encode(instr, is64_)); break;
             case I_VCVTSD2USI:          JITASM_ASSERT(encoder::Opcode$< I_VCVTSD2USI >::Encode(instr, is64_)); break;
+            case I_VCVTSI2SD:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSI2SD >::Encode(instr, is64_)); break;
+            case I_VCVTSI2SS:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSI2SS >::Encode(instr, is64_)); break;
+            case I_VCVTSS2SD:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSS2SD >::Encode(instr, is64_)); break;
             case I_VCVTSS2SI:           JITASM_ASSERT(encoder::Opcode$< I_VCVTSS2SI >::Encode(instr, is64_)); break;
             case I_VCVTSS2USI:          JITASM_ASSERT(encoder::Opcode$< I_VCVTSS2USI >::Encode(instr, is64_)); break;
-            case I_VCVTTPD2DQX:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTPD2DQX >::Encode(instr, is64_)); break;
             case I_VCVTTPD2DQ:          JITASM_ASSERT(encoder::Opcode$< I_VCVTTPD2DQ >::Encode(instr, is64_)); break;
+            case I_VCVTTPD2DQX:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTPD2DQX >::Encode(instr, is64_)); break;
             case I_VCVTTPD2UDQ:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTPD2UDQ >::Encode(instr, is64_)); break;
             case I_VCVTTPS2DQ:          JITASM_ASSERT(encoder::Opcode$< I_VCVTTPS2DQ >::Encode(instr, is64_)); break;
             case I_VCVTTPS2UDQ:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTPS2UDQ >::Encode(instr, is64_)); break;
+            case I_VCVTTSD2SI:          JITASM_ASSERT(encoder::Opcode$< I_VCVTTSD2SI >::Encode(instr, is64_)); break;
+            case I_VCVTTSD2USI:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTSD2USI >::Encode(instr, is64_)); break;
+            case I_VCVTTSS2SI:          JITASM_ASSERT(encoder::Opcode$< I_VCVTTSS2SI >::Encode(instr, is64_)); break;
+            case I_VCVTTSS2USI:         JITASM_ASSERT(encoder::Opcode$< I_VCVTTSS2USI >::Encode(instr, is64_)); break;
             case I_VCVTUDQ2PD:          JITASM_ASSERT(encoder::Opcode$< I_VCVTUDQ2PD >::Encode(instr, is64_)); break;
             case I_VCVTUDQ2PS:          JITASM_ASSERT(encoder::Opcode$< I_VCVTUDQ2PS >::Encode(instr, is64_)); break;
+            case I_VCVTUSI2SD:          JITASM_ASSERT(encoder::Opcode$< I_VCVTUSI2SD >::Encode(instr, is64_)); break;
+            case I_VCVTUSI2SS:          JITASM_ASSERT(encoder::Opcode$< I_VCVTUSI2SS >::Encode(instr, is64_)); break;
             case I_VDIVPD:              JITASM_ASSERT(encoder::Opcode$< I_VDIVPD >::Encode(instr, is64_)); break;
             case I_VDIVPS:              JITASM_ASSERT(encoder::Opcode$< I_VDIVPS >::Encode(instr, is64_)); break;
             case I_VDIVSD:              JITASM_ASSERT(encoder::Opcode$< I_VDIVSD >::Encode(instr, is64_)); break;
@@ -2313,92 +1217,88 @@ namespace jitasm
             case I_VEXTRACTPS:          JITASM_ASSERT(encoder::Opcode$< I_VEXTRACTPS >::Encode(instr, is64_)); break;
             case I_VFMADD132PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD132PD >::Encode(instr, is64_)); break;
             case I_VFMADD132PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD132PS >::Encode(instr, is64_)); break;
+            case I_VFMADD132SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD132SD >::Encode(instr, is64_)); break;
+            case I_VFMADD132SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD132SS >::Encode(instr, is64_)); break;
             case I_VFMADD213PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD213PD >::Encode(instr, is64_)); break;
             case I_VFMADD213PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD213PS >::Encode(instr, is64_)); break;
-            case I_VFMADDPD:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDPD >::Encode(instr, is64_)); break;
-            case I_VFMADD231PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD231PD >::Encode(instr, is64_)); break;
-            case I_VFMADDPS:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDPS >::Encode(instr, is64_)); break;
-            case I_VFMADD231PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD231PS >::Encode(instr, is64_)); break;
-            case I_VFMADDSD:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDSD >::Encode(instr, is64_)); break;
             case I_VFMADD213SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD213SD >::Encode(instr, is64_)); break;
-            case I_VFMADD132SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD132SD >::Encode(instr, is64_)); break;
-            case I_VFMADD231SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD231SD >::Encode(instr, is64_)); break;
-            case I_VFMADDSS:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDSS >::Encode(instr, is64_)); break;
             case I_VFMADD213SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD213SS >::Encode(instr, is64_)); break;
-            case I_VFMADD132SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD132SS >::Encode(instr, is64_)); break;
+            case I_VFMADD231PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD231PD >::Encode(instr, is64_)); break;
+            case I_VFMADD231PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD231PS >::Encode(instr, is64_)); break;
+            case I_VFMADD231SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD231SD >::Encode(instr, is64_)); break;
             case I_VFMADD231SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADD231SS >::Encode(instr, is64_)); break;
+            case I_VFMADDPD:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDPD >::Encode(instr, is64_)); break;
+            case I_VFMADDPS:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDPS >::Encode(instr, is64_)); break;
+            case I_VFMADDSD:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDSD >::Encode(instr, is64_)); break;
+            case I_VFMADDSS:            JITASM_ASSERT(encoder::Opcode$< I_VFMADDSS >::Encode(instr, is64_)); break;
             case I_VFMADDSUB132PD:      JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUB132PD >::Encode(instr, is64_)); break;
             case I_VFMADDSUB132PS:      JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUB132PS >::Encode(instr, is64_)); break;
             case I_VFMADDSUB213PD:      JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUB213PD >::Encode(instr, is64_)); break;
             case I_VFMADDSUB213PS:      JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUB213PS >::Encode(instr, is64_)); break;
-            case I_VFMADDSUBPD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUBPD >::Encode(instr, is64_)); break;
             case I_VFMADDSUB231PD:      JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUB231PD >::Encode(instr, is64_)); break;
-            case I_VFMADDSUBPS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUBPS >::Encode(instr, is64_)); break;
             case I_VFMADDSUB231PS:      JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUB231PS >::Encode(instr, is64_)); break;
+            case I_VFMADDSUBPD:         JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUBPD >::Encode(instr, is64_)); break;
+            case I_VFMADDSUBPS:         JITASM_ASSERT(encoder::Opcode$< I_VFMADDSUBPS >::Encode(instr, is64_)); break;
             case I_VFMSUB132PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB132PD >::Encode(instr, is64_)); break;
             case I_VFMSUB132PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB132PS >::Encode(instr, is64_)); break;
+            case I_VFMSUB132SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB132SD >::Encode(instr, is64_)); break;
+            case I_VFMSUB132SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB132SS >::Encode(instr, is64_)); break;
             case I_VFMSUB213PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB213PD >::Encode(instr, is64_)); break;
             case I_VFMSUB213PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB213PS >::Encode(instr, is64_)); break;
+            case I_VFMSUB213SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB213SD >::Encode(instr, is64_)); break;
+            case I_VFMSUB213SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB213SS >::Encode(instr, is64_)); break;
+            case I_VFMSUB231PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231PD >::Encode(instr, is64_)); break;
+            case I_VFMSUB231PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231PS >::Encode(instr, is64_)); break;
+            case I_VFMSUB231SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231SD >::Encode(instr, is64_)); break;
+            case I_VFMSUB231SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231SS >::Encode(instr, is64_)); break;
             case I_VFMSUBADD132PD:      JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADD132PD >::Encode(instr, is64_)); break;
             case I_VFMSUBADD132PS:      JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADD132PS >::Encode(instr, is64_)); break;
             case I_VFMSUBADD213PD:      JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADD213PD >::Encode(instr, is64_)); break;
             case I_VFMSUBADD213PS:      JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADD213PS >::Encode(instr, is64_)); break;
-            case I_VFMSUBADDPD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADDPD >::Encode(instr, is64_)); break;
             case I_VFMSUBADD231PD:      JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADD231PD >::Encode(instr, is64_)); break;
-            case I_VFMSUBADDPS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADDPS >::Encode(instr, is64_)); break;
             case I_VFMSUBADD231PS:      JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADD231PS >::Encode(instr, is64_)); break;
+            case I_VFMSUBADDPD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADDPD >::Encode(instr, is64_)); break;
+            case I_VFMSUBADDPS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUBADDPS >::Encode(instr, is64_)); break;
             case I_VFMSUBPD:            JITASM_ASSERT(encoder::Opcode$< I_VFMSUBPD >::Encode(instr, is64_)); break;
-            case I_VFMSUB231PD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231PD >::Encode(instr, is64_)); break;
             case I_VFMSUBPS:            JITASM_ASSERT(encoder::Opcode$< I_VFMSUBPS >::Encode(instr, is64_)); break;
-            case I_VFMSUB231PS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231PS >::Encode(instr, is64_)); break;
             case I_VFMSUBSD:            JITASM_ASSERT(encoder::Opcode$< I_VFMSUBSD >::Encode(instr, is64_)); break;
-            case I_VFMSUB213SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB213SD >::Encode(instr, is64_)); break;
-            case I_VFMSUB132SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB132SD >::Encode(instr, is64_)); break;
-            case I_VFMSUB231SD:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231SD >::Encode(instr, is64_)); break;
             case I_VFMSUBSS:            JITASM_ASSERT(encoder::Opcode$< I_VFMSUBSS >::Encode(instr, is64_)); break;
-            case I_VFMSUB213SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB213SS >::Encode(instr, is64_)); break;
-            case I_VFMSUB132SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB132SS >::Encode(instr, is64_)); break;
-            case I_VFMSUB231SS:         JITASM_ASSERT(encoder::Opcode$< I_VFMSUB231SS >::Encode(instr, is64_)); break;
             case I_VFNMADD132PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD132PD >::Encode(instr, is64_)); break;
             case I_VFNMADD132PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD132PS >::Encode(instr, is64_)); break;
+            case I_VFNMADD132SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD132SD >::Encode(instr, is64_)); break;
+            case I_VFNMADD132SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD132SS >::Encode(instr, is64_)); break;
             case I_VFNMADD213PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD213PD >::Encode(instr, is64_)); break;
             case I_VFNMADD213PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD213PS >::Encode(instr, is64_)); break;
-            case I_VFNMADDPD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDPD >::Encode(instr, is64_)); break;
-            case I_VFNMADD231PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD231PD >::Encode(instr, is64_)); break;
-            case I_VFNMADDPS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDPS >::Encode(instr, is64_)); break;
-            case I_VFNMADD231PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD231PS >::Encode(instr, is64_)); break;
-            case I_VFNMADDSD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDSD >::Encode(instr, is64_)); break;
             case I_VFNMADD213SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD213SD >::Encode(instr, is64_)); break;
-            case I_VFNMADD132SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD132SD >::Encode(instr, is64_)); break;
-            case I_VFNMADD231SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD231SD >::Encode(instr, is64_)); break;
-            case I_VFNMADDSS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDSS >::Encode(instr, is64_)); break;
             case I_VFNMADD213SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD213SS >::Encode(instr, is64_)); break;
-            case I_VFNMADD132SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD132SS >::Encode(instr, is64_)); break;
+            case I_VFNMADD231PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD231PD >::Encode(instr, is64_)); break;
+            case I_VFNMADD231PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD231PS >::Encode(instr, is64_)); break;
+            case I_VFNMADD231SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD231SD >::Encode(instr, is64_)); break;
             case I_VFNMADD231SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMADD231SS >::Encode(instr, is64_)); break;
+            case I_VFNMADDPD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDPD >::Encode(instr, is64_)); break;
+            case I_VFNMADDPS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDPS >::Encode(instr, is64_)); break;
+            case I_VFNMADDSD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDSD >::Encode(instr, is64_)); break;
+            case I_VFNMADDSS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMADDSS >::Encode(instr, is64_)); break;
             case I_VFNMSUB132PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB132PD >::Encode(instr, is64_)); break;
             case I_VFNMSUB132PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB132PS >::Encode(instr, is64_)); break;
+            case I_VFNMSUB132SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB132SD >::Encode(instr, is64_)); break;
+            case I_VFNMSUB132SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB132SS >::Encode(instr, is64_)); break;
             case I_VFNMSUB213PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB213PD >::Encode(instr, is64_)); break;
             case I_VFNMSUB213PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB213PS >::Encode(instr, is64_)); break;
-            case I_VFNMSUBPD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBPD >::Encode(instr, is64_)); break;
-            case I_VFNMSUB231PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB231PD >::Encode(instr, is64_)); break;
-            case I_VFNMSUBPS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBPS >::Encode(instr, is64_)); break;
-            case I_VFNMSUB231PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB231PS >::Encode(instr, is64_)); break;
-            case I_VFNMSUBSD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBSD >::Encode(instr, is64_)); break;
             case I_VFNMSUB213SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB213SD >::Encode(instr, is64_)); break;
-            case I_VFNMSUB132SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB132SD >::Encode(instr, is64_)); break;
-            case I_VFNMSUB231SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB231SD >::Encode(instr, is64_)); break;
-            case I_VFNMSUBSS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBSS >::Encode(instr, is64_)); break;
             case I_VFNMSUB213SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB213SS >::Encode(instr, is64_)); break;
-            case I_VFNMSUB132SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB132SS >::Encode(instr, is64_)); break;
+            case I_VFNMSUB231PD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB231PD >::Encode(instr, is64_)); break;
+            case I_VFNMSUB231PS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB231PS >::Encode(instr, is64_)); break;
+            case I_VFNMSUB231SD:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB231SD >::Encode(instr, is64_)); break;
             case I_VFNMSUB231SS:        JITASM_ASSERT(encoder::Opcode$< I_VFNMSUB231SS >::Encode(instr, is64_)); break;
+            case I_VFNMSUBPD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBPD >::Encode(instr, is64_)); break;
+            case I_VFNMSUBPS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBPS >::Encode(instr, is64_)); break;
+            case I_VFNMSUBSD:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBSD >::Encode(instr, is64_)); break;
+            case I_VFNMSUBSS:           JITASM_ASSERT(encoder::Opcode$< I_VFNMSUBSS >::Encode(instr, is64_)); break;
             case I_VFRCZPD:             JITASM_ASSERT(encoder::Opcode$< I_VFRCZPD >::Encode(instr, is64_)); break;
             case I_VFRCZPS:             JITASM_ASSERT(encoder::Opcode$< I_VFRCZPS >::Encode(instr, is64_)); break;
             case I_VFRCZSD:             JITASM_ASSERT(encoder::Opcode$< I_VFRCZSD >::Encode(instr, is64_)); break;
             case I_VFRCZSS:             JITASM_ASSERT(encoder::Opcode$< I_VFRCZSS >::Encode(instr, is64_)); break;
-            case I_VORPD:               JITASM_ASSERT(encoder::Opcode$< I_VORPD >::Encode(instr, is64_)); break;
-            case I_VORPS:               JITASM_ASSERT(encoder::Opcode$< I_VORPS >::Encode(instr, is64_)); break;
-            case I_VXORPD:              JITASM_ASSERT(encoder::Opcode$< I_VXORPD >::Encode(instr, is64_)); break;
-            case I_VXORPS:              JITASM_ASSERT(encoder::Opcode$< I_VXORPS >::Encode(instr, is64_)); break;
             case I_VGATHERDPD:          JITASM_ASSERT(encoder::Opcode$< I_VGATHERDPD >::Encode(instr, is64_)); break;
             case I_VGATHERDPS:          JITASM_ASSERT(encoder::Opcode$< I_VGATHERDPS >::Encode(instr, is64_)); break;
             case I_VGATHERPF0DPD:       JITASM_ASSERT(encoder::Opcode$< I_VGATHERPF0DPD >::Encode(instr, is64_)); break;
@@ -2441,17 +1341,18 @@ namespace jitasm
             case I_VMLAUNCH:            JITASM_ASSERT(encoder::Opcode$< I_VMLAUNCH >::Encode(instr, is64_)); break;
             case I_VMLOAD:              JITASM_ASSERT(encoder::Opcode$< I_VMLOAD >::Encode(instr, is64_)); break;
             case I_VMMCALL:             JITASM_ASSERT(encoder::Opcode$< I_VMMCALL >::Encode(instr, is64_)); break;
-            case I_VMOVQ:               JITASM_ASSERT(encoder::Opcode$< I_VMOVQ >::Encode(instr, is64_)); break;
-            case I_VMOVDDUP:            JITASM_ASSERT(encoder::Opcode$< I_VMOVDDUP >::Encode(instr, is64_)); break;
+            case I_VMOVAPD:             JITASM_ASSERT(encoder::Opcode$< I_VMOVAPD >::Encode(instr, is64_)); break;
+            case I_VMOVAPS:             JITASM_ASSERT(encoder::Opcode$< I_VMOVAPS >::Encode(instr, is64_)); break;
             case I_VMOVD:               JITASM_ASSERT(encoder::Opcode$< I_VMOVD >::Encode(instr, is64_)); break;
+            case I_VMOVDDUP:            JITASM_ASSERT(encoder::Opcode$< I_VMOVDDUP >::Encode(instr, is64_)); break;
+            case I_VMOVDQA:             JITASM_ASSERT(encoder::Opcode$< I_VMOVDQA >::Encode(instr, is64_)); break;
             case I_VMOVDQA32:           JITASM_ASSERT(encoder::Opcode$< I_VMOVDQA32 >::Encode(instr, is64_)); break;
             case I_VMOVDQA64:           JITASM_ASSERT(encoder::Opcode$< I_VMOVDQA64 >::Encode(instr, is64_)); break;
-            case I_VMOVDQA:             JITASM_ASSERT(encoder::Opcode$< I_VMOVDQA >::Encode(instr, is64_)); break;
+            case I_VMOVDQU:             JITASM_ASSERT(encoder::Opcode$< I_VMOVDQU >::Encode(instr, is64_)); break;
             case I_VMOVDQU16:           JITASM_ASSERT(encoder::Opcode$< I_VMOVDQU16 >::Encode(instr, is64_)); break;
             case I_VMOVDQU32:           JITASM_ASSERT(encoder::Opcode$< I_VMOVDQU32 >::Encode(instr, is64_)); break;
             case I_VMOVDQU64:           JITASM_ASSERT(encoder::Opcode$< I_VMOVDQU64 >::Encode(instr, is64_)); break;
             case I_VMOVDQU8:            JITASM_ASSERT(encoder::Opcode$< I_VMOVDQU8 >::Encode(instr, is64_)); break;
-            case I_VMOVDQU:             JITASM_ASSERT(encoder::Opcode$< I_VMOVDQU >::Encode(instr, is64_)); break;
             case I_VMOVHLPS:            JITASM_ASSERT(encoder::Opcode$< I_VMOVHLPS >::Encode(instr, is64_)); break;
             case I_VMOVHPD:             JITASM_ASSERT(encoder::Opcode$< I_VMOVHPD >::Encode(instr, is64_)); break;
             case I_VMOVHPS:             JITASM_ASSERT(encoder::Opcode$< I_VMOVHPS >::Encode(instr, is64_)); break;
@@ -2460,10 +1361,11 @@ namespace jitasm
             case I_VMOVLPS:             JITASM_ASSERT(encoder::Opcode$< I_VMOVLPS >::Encode(instr, is64_)); break;
             case I_VMOVMSKPD:           JITASM_ASSERT(encoder::Opcode$< I_VMOVMSKPD >::Encode(instr, is64_)); break;
             case I_VMOVMSKPS:           JITASM_ASSERT(encoder::Opcode$< I_VMOVMSKPS >::Encode(instr, is64_)); break;
-            case I_VMOVNTDQA:           JITASM_ASSERT(encoder::Opcode$< I_VMOVNTDQA >::Encode(instr, is64_)); break;
             case I_VMOVNTDQ:            JITASM_ASSERT(encoder::Opcode$< I_VMOVNTDQ >::Encode(instr, is64_)); break;
+            case I_VMOVNTDQA:           JITASM_ASSERT(encoder::Opcode$< I_VMOVNTDQA >::Encode(instr, is64_)); break;
             case I_VMOVNTPD:            JITASM_ASSERT(encoder::Opcode$< I_VMOVNTPD >::Encode(instr, is64_)); break;
             case I_VMOVNTPS:            JITASM_ASSERT(encoder::Opcode$< I_VMOVNTPS >::Encode(instr, is64_)); break;
+            case I_VMOVQ:               JITASM_ASSERT(encoder::Opcode$< I_VMOVQ >::Encode(instr, is64_)); break;
             case I_VMOVSD:              JITASM_ASSERT(encoder::Opcode$< I_VMOVSD >::Encode(instr, is64_)); break;
             case I_VMOVSHDUP:           JITASM_ASSERT(encoder::Opcode$< I_VMOVSHDUP >::Encode(instr, is64_)); break;
             case I_VMOVSLDUP:           JITASM_ASSERT(encoder::Opcode$< I_VMOVSLDUP >::Encode(instr, is64_)); break;
@@ -2484,6 +1386,8 @@ namespace jitasm
             case I_VMWRITE:             JITASM_ASSERT(encoder::Opcode$< I_VMWRITE >::Encode(instr, is64_)); break;
             case I_VMXOFF:              JITASM_ASSERT(encoder::Opcode$< I_VMXOFF >::Encode(instr, is64_)); break;
             case I_VMXON:               JITASM_ASSERT(encoder::Opcode$< I_VMXON >::Encode(instr, is64_)); break;
+            case I_VORPD:               JITASM_ASSERT(encoder::Opcode$< I_VORPD >::Encode(instr, is64_)); break;
+            case I_VORPS:               JITASM_ASSERT(encoder::Opcode$< I_VORPS >::Encode(instr, is64_)); break;
             case I_VPABSB:              JITASM_ASSERT(encoder::Opcode$< I_VPABSB >::Encode(instr, is64_)); break;
             case I_VPABSD:              JITASM_ASSERT(encoder::Opcode$< I_VPABSD >::Encode(instr, is64_)); break;
             case I_VPABSQ:              JITASM_ASSERT(encoder::Opcode$< I_VPABSQ >::Encode(instr, is64_)); break;
@@ -2501,12 +1405,12 @@ namespace jitasm
             case I_VPADDUSW:            JITASM_ASSERT(encoder::Opcode$< I_VPADDUSW >::Encode(instr, is64_)); break;
             case I_VPADDW:              JITASM_ASSERT(encoder::Opcode$< I_VPADDW >::Encode(instr, is64_)); break;
             case I_VPALIGNR:            JITASM_ASSERT(encoder::Opcode$< I_VPALIGNR >::Encode(instr, is64_)); break;
+            case I_VPAND:               JITASM_ASSERT(encoder::Opcode$< I_VPAND >::Encode(instr, is64_)); break;
             case I_VPANDD:              JITASM_ASSERT(encoder::Opcode$< I_VPANDD >::Encode(instr, is64_)); break;
+            case I_VPANDN:              JITASM_ASSERT(encoder::Opcode$< I_VPANDN >::Encode(instr, is64_)); break;
             case I_VPANDND:             JITASM_ASSERT(encoder::Opcode$< I_VPANDND >::Encode(instr, is64_)); break;
             case I_VPANDNQ:             JITASM_ASSERT(encoder::Opcode$< I_VPANDNQ >::Encode(instr, is64_)); break;
-            case I_VPANDN:              JITASM_ASSERT(encoder::Opcode$< I_VPANDN >::Encode(instr, is64_)); break;
             case I_VPANDQ:              JITASM_ASSERT(encoder::Opcode$< I_VPANDQ >::Encode(instr, is64_)); break;
-            case I_VPAND:               JITASM_ASSERT(encoder::Opcode$< I_VPAND >::Encode(instr, is64_)); break;
             case I_VPAVGB:              JITASM_ASSERT(encoder::Opcode$< I_VPAVGB >::Encode(instr, is64_)); break;
             case I_VPAVGW:              JITASM_ASSERT(encoder::Opcode$< I_VPAVGW >::Encode(instr, is64_)); break;
             case I_VPBLENDD:            JITASM_ASSERT(encoder::Opcode$< I_VPBLENDD >::Encode(instr, is64_)); break;
@@ -2578,8 +1482,8 @@ namespace jitasm
             case I_VPHADDBD:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDBD >::Encode(instr, is64_)); break;
             case I_VPHADDBQ:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDBQ >::Encode(instr, is64_)); break;
             case I_VPHADDBW:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDBW >::Encode(instr, is64_)); break;
-            case I_VPHADDDQ:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDDQ >::Encode(instr, is64_)); break;
             case I_VPHADDD:             JITASM_ASSERT(encoder::Opcode$< I_VPHADDD >::Encode(instr, is64_)); break;
+            case I_VPHADDDQ:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDDQ >::Encode(instr, is64_)); break;
             case I_VPHADDSW:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDSW >::Encode(instr, is64_)); break;
             case I_VPHADDUBD:           JITASM_ASSERT(encoder::Opcode$< I_VPHADDUBD >::Encode(instr, is64_)); break;
             case I_VPHADDUBQ:           JITASM_ASSERT(encoder::Opcode$< I_VPHADDUBQ >::Encode(instr, is64_)); break;
@@ -2587,16 +1491,16 @@ namespace jitasm
             case I_VPHADDUDQ:           JITASM_ASSERT(encoder::Opcode$< I_VPHADDUDQ >::Encode(instr, is64_)); break;
             case I_VPHADDUWD:           JITASM_ASSERT(encoder::Opcode$< I_VPHADDUWD >::Encode(instr, is64_)); break;
             case I_VPHADDUWQ:           JITASM_ASSERT(encoder::Opcode$< I_VPHADDUWQ >::Encode(instr, is64_)); break;
+            case I_VPHADDW:             JITASM_ASSERT(encoder::Opcode$< I_VPHADDW >::Encode(instr, is64_)); break;
             case I_VPHADDWD:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDWD >::Encode(instr, is64_)); break;
             case I_VPHADDWQ:            JITASM_ASSERT(encoder::Opcode$< I_VPHADDWQ >::Encode(instr, is64_)); break;
-            case I_VPHADDW:             JITASM_ASSERT(encoder::Opcode$< I_VPHADDW >::Encode(instr, is64_)); break;
             case I_VPHMINPOSUW:         JITASM_ASSERT(encoder::Opcode$< I_VPHMINPOSUW >::Encode(instr, is64_)); break;
             case I_VPHSUBBW:            JITASM_ASSERT(encoder::Opcode$< I_VPHSUBBW >::Encode(instr, is64_)); break;
-            case I_VPHSUBDQ:            JITASM_ASSERT(encoder::Opcode$< I_VPHSUBDQ >::Encode(instr, is64_)); break;
             case I_VPHSUBD:             JITASM_ASSERT(encoder::Opcode$< I_VPHSUBD >::Encode(instr, is64_)); break;
+            case I_VPHSUBDQ:            JITASM_ASSERT(encoder::Opcode$< I_VPHSUBDQ >::Encode(instr, is64_)); break;
             case I_VPHSUBSW:            JITASM_ASSERT(encoder::Opcode$< I_VPHSUBSW >::Encode(instr, is64_)); break;
-            case I_VPHSUBWD:            JITASM_ASSERT(encoder::Opcode$< I_VPHSUBWD >::Encode(instr, is64_)); break;
             case I_VPHSUBW:             JITASM_ASSERT(encoder::Opcode$< I_VPHSUBW >::Encode(instr, is64_)); break;
+            case I_VPHSUBWD:            JITASM_ASSERT(encoder::Opcode$< I_VPHSUBWD >::Encode(instr, is64_)); break;
             case I_VPINSRB:             JITASM_ASSERT(encoder::Opcode$< I_VPINSRB >::Encode(instr, is64_)); break;
             case I_VPINSRD:             JITASM_ASSERT(encoder::Opcode$< I_VPINSRD >::Encode(instr, is64_)); break;
             case I_VPINSRQ:             JITASM_ASSERT(encoder::Opcode$< I_VPINSRQ >::Encode(instr, is64_)); break;
@@ -2670,9 +1574,9 @@ namespace jitasm
             case I_VPMULLD:             JITASM_ASSERT(encoder::Opcode$< I_VPMULLD >::Encode(instr, is64_)); break;
             case I_VPMULLW:             JITASM_ASSERT(encoder::Opcode$< I_VPMULLW >::Encode(instr, is64_)); break;
             case I_VPMULUDQ:            JITASM_ASSERT(encoder::Opcode$< I_VPMULUDQ >::Encode(instr, is64_)); break;
+            case I_VPOR:                JITASM_ASSERT(encoder::Opcode$< I_VPOR >::Encode(instr, is64_)); break;
             case I_VPORD:               JITASM_ASSERT(encoder::Opcode$< I_VPORD >::Encode(instr, is64_)); break;
             case I_VPORQ:               JITASM_ASSERT(encoder::Opcode$< I_VPORQ >::Encode(instr, is64_)); break;
-            case I_VPOR:                JITASM_ASSERT(encoder::Opcode$< I_VPOR >::Encode(instr, is64_)); break;
             case I_VPPERM:              JITASM_ASSERT(encoder::Opcode$< I_VPPERM >::Encode(instr, is64_)); break;
             case I_VPROTB:              JITASM_ASSERT(encoder::Opcode$< I_VPROTB >::Encode(instr, is64_)); break;
             case I_VPROTD:              JITASM_ASSERT(encoder::Opcode$< I_VPROTD >::Encode(instr, is64_)); break;
@@ -2698,8 +1602,8 @@ namespace jitasm
             case I_VPSIGNB:             JITASM_ASSERT(encoder::Opcode$< I_VPSIGNB >::Encode(instr, is64_)); break;
             case I_VPSIGND:             JITASM_ASSERT(encoder::Opcode$< I_VPSIGND >::Encode(instr, is64_)); break;
             case I_VPSIGNW:             JITASM_ASSERT(encoder::Opcode$< I_VPSIGNW >::Encode(instr, is64_)); break;
-            case I_VPSLLDQ:             JITASM_ASSERT(encoder::Opcode$< I_VPSLLDQ >::Encode(instr, is64_)); break;
             case I_VPSLLD:              JITASM_ASSERT(encoder::Opcode$< I_VPSLLD >::Encode(instr, is64_)); break;
+            case I_VPSLLDQ:             JITASM_ASSERT(encoder::Opcode$< I_VPSLLDQ >::Encode(instr, is64_)); break;
             case I_VPSLLQ:              JITASM_ASSERT(encoder::Opcode$< I_VPSLLQ >::Encode(instr, is64_)); break;
             case I_VPSLLVD:             JITASM_ASSERT(encoder::Opcode$< I_VPSLLVD >::Encode(instr, is64_)); break;
             case I_VPSLLVQ:             JITASM_ASSERT(encoder::Opcode$< I_VPSLLVQ >::Encode(instr, is64_)); break;
@@ -2709,8 +1613,8 @@ namespace jitasm
             case I_VPSRAVD:             JITASM_ASSERT(encoder::Opcode$< I_VPSRAVD >::Encode(instr, is64_)); break;
             case I_VPSRAVQ:             JITASM_ASSERT(encoder::Opcode$< I_VPSRAVQ >::Encode(instr, is64_)); break;
             case I_VPSRAW:              JITASM_ASSERT(encoder::Opcode$< I_VPSRAW >::Encode(instr, is64_)); break;
-            case I_VPSRLDQ:             JITASM_ASSERT(encoder::Opcode$< I_VPSRLDQ >::Encode(instr, is64_)); break;
             case I_VPSRLD:              JITASM_ASSERT(encoder::Opcode$< I_VPSRLD >::Encode(instr, is64_)); break;
+            case I_VPSRLDQ:             JITASM_ASSERT(encoder::Opcode$< I_VPSRLDQ >::Encode(instr, is64_)); break;
             case I_VPSRLQ:              JITASM_ASSERT(encoder::Opcode$< I_VPSRLQ >::Encode(instr, is64_)); break;
             case I_VPSRLVD:             JITASM_ASSERT(encoder::Opcode$< I_VPSRLVD >::Encode(instr, is64_)); break;
             case I_VPSRLVQ:             JITASM_ASSERT(encoder::Opcode$< I_VPSRLVQ >::Encode(instr, is64_)); break;
@@ -2723,11 +1627,11 @@ namespace jitasm
             case I_VPSUBUSB:            JITASM_ASSERT(encoder::Opcode$< I_VPSUBUSB >::Encode(instr, is64_)); break;
             case I_VPSUBUSW:            JITASM_ASSERT(encoder::Opcode$< I_VPSUBUSW >::Encode(instr, is64_)); break;
             case I_VPSUBW:              JITASM_ASSERT(encoder::Opcode$< I_VPSUBW >::Encode(instr, is64_)); break;
+            case I_VPTEST:              JITASM_ASSERT(encoder::Opcode$< I_VPTEST >::Encode(instr, is64_)); break;
             case I_VPTESTMD:            JITASM_ASSERT(encoder::Opcode$< I_VPTESTMD >::Encode(instr, is64_)); break;
             case I_VPTESTMQ:            JITASM_ASSERT(encoder::Opcode$< I_VPTESTMQ >::Encode(instr, is64_)); break;
             case I_VPTESTNMD:           JITASM_ASSERT(encoder::Opcode$< I_VPTESTNMD >::Encode(instr, is64_)); break;
             case I_VPTESTNMQ:           JITASM_ASSERT(encoder::Opcode$< I_VPTESTNMQ >::Encode(instr, is64_)); break;
-            case I_VPTEST:              JITASM_ASSERT(encoder::Opcode$< I_VPTEST >::Encode(instr, is64_)); break;
             case I_VPUNPCKHBW:          JITASM_ASSERT(encoder::Opcode$< I_VPUNPCKHBW >::Encode(instr, is64_)); break;
             case I_VPUNPCKHDQ:          JITASM_ASSERT(encoder::Opcode$< I_VPUNPCKHDQ >::Encode(instr, is64_)); break;
             case I_VPUNPCKHQDQ:         JITASM_ASSERT(encoder::Opcode$< I_VPUNPCKHQDQ >::Encode(instr, is64_)); break;
@@ -2736,9 +1640,9 @@ namespace jitasm
             case I_VPUNPCKLDQ:          JITASM_ASSERT(encoder::Opcode$< I_VPUNPCKLDQ >::Encode(instr, is64_)); break;
             case I_VPUNPCKLQDQ:         JITASM_ASSERT(encoder::Opcode$< I_VPUNPCKLQDQ >::Encode(instr, is64_)); break;
             case I_VPUNPCKLWD:          JITASM_ASSERT(encoder::Opcode$< I_VPUNPCKLWD >::Encode(instr, is64_)); break;
+            case I_VPXOR:               JITASM_ASSERT(encoder::Opcode$< I_VPXOR >::Encode(instr, is64_)); break;
             case I_VPXORD:              JITASM_ASSERT(encoder::Opcode$< I_VPXORD >::Encode(instr, is64_)); break;
             case I_VPXORQ:              JITASM_ASSERT(encoder::Opcode$< I_VPXORQ >::Encode(instr, is64_)); break;
-            case I_VPXOR:               JITASM_ASSERT(encoder::Opcode$< I_VPXOR >::Encode(instr, is64_)); break;
             case I_VRCP14PD:            JITASM_ASSERT(encoder::Opcode$< I_VRCP14PD >::Encode(instr, is64_)); break;
             case I_VRCP14PS:            JITASM_ASSERT(encoder::Opcode$< I_VRCP14PS >::Encode(instr, is64_)); break;
             case I_VRCP14SD:            JITASM_ASSERT(encoder::Opcode$< I_VRCP14SD >::Encode(instr, is64_)); break;
@@ -2792,10 +1696,14 @@ namespace jitasm
             case I_VSUBSS:              JITASM_ASSERT(encoder::Opcode$< I_VSUBSS >::Encode(instr, is64_)); break;
             case I_VTESTPD:             JITASM_ASSERT(encoder::Opcode$< I_VTESTPD >::Encode(instr, is64_)); break;
             case I_VTESTPS:             JITASM_ASSERT(encoder::Opcode$< I_VTESTPS >::Encode(instr, is64_)); break;
+            case I_VUCOMISD:            JITASM_ASSERT(encoder::Opcode$< I_VUCOMISD >::Encode(instr, is64_)); break;
+            case I_VUCOMISS:            JITASM_ASSERT(encoder::Opcode$< I_VUCOMISS >::Encode(instr, is64_)); break;
             case I_VUNPCKHPD:           JITASM_ASSERT(encoder::Opcode$< I_VUNPCKHPD >::Encode(instr, is64_)); break;
             case I_VUNPCKHPS:           JITASM_ASSERT(encoder::Opcode$< I_VUNPCKHPS >::Encode(instr, is64_)); break;
             case I_VUNPCKLPD:           JITASM_ASSERT(encoder::Opcode$< I_VUNPCKLPD >::Encode(instr, is64_)); break;
             case I_VUNPCKLPS:           JITASM_ASSERT(encoder::Opcode$< I_VUNPCKLPS >::Encode(instr, is64_)); break;
+            case I_VXORPD:              JITASM_ASSERT(encoder::Opcode$< I_VXORPD >::Encode(instr, is64_)); break;
+            case I_VXORPS:              JITASM_ASSERT(encoder::Opcode$< I_VXORPS >::Encode(instr, is64_)); break;
             case I_VZEROALL:            JITASM_ASSERT(encoder::Opcode$< I_VZEROALL >::Encode(instr, is64_)); break;
             case I_VZEROUPPER:          JITASM_ASSERT(encoder::Opcode$< I_VZEROUPPER >::Encode(instr, is64_)); break;
             case I_WAIT:                JITASM_ASSERT(encoder::Opcode$< I_WAIT >::Encode(instr, is64_)); break;
@@ -2805,9 +1713,9 @@ namespace jitasm
             case I_WRMSR:               JITASM_ASSERT(encoder::Opcode$< I_WRMSR >::Encode(instr, is64_)); break;
             case I_XABORT:              JITASM_ASSERT(encoder::Opcode$< I_XABORT >::Encode(instr, is64_)); break;
             case I_XACQUIRE:            JITASM_ASSERT(encoder::Opcode$< I_XACQUIRE >::Encode(instr, is64_)); break;
+            case I_XADD:                JITASM_ASSERT(encoder::Opcode$< I_XADD >::Encode(instr, is64_)); break;
             case I_XBEGIN:              JITASM_ASSERT(encoder::Opcode$< I_XBEGIN >::Encode(instr, is64_)); break;
             case I_XCHG:                JITASM_ASSERT(encoder::Opcode$< I_XCHG >::Encode(instr, is64_)); break;
-            case I_FXCH:                JITASM_ASSERT(encoder::Opcode$< I_FXCH >::Encode(instr, is64_)); break;
             case I_XCRYPTCBC:           JITASM_ASSERT(encoder::Opcode$< I_XCRYPTCBC >::Encode(instr, is64_)); break;
             case I_XCRYPTCFB:           JITASM_ASSERT(encoder::Opcode$< I_XCRYPTCFB >::Encode(instr, is64_)); break;
             case I_XCRYPTCTR:           JITASM_ASSERT(encoder::Opcode$< I_XCRYPTCTR >::Encode(instr, is64_)); break;
@@ -2816,6 +1724,9 @@ namespace jitasm
             case I_XEND:                JITASM_ASSERT(encoder::Opcode$< I_XEND >::Encode(instr, is64_)); break;
             case I_XGETBV:              JITASM_ASSERT(encoder::Opcode$< I_XGETBV >::Encode(instr, is64_)); break;
             case I_XLATB:               JITASM_ASSERT(encoder::Opcode$< I_XLATB >::Encode(instr, is64_)); break;
+            case I_XOR:                 JITASM_ASSERT(encoder::Opcode$< I_XOR >::Encode(instr, is64_)); break;
+            case I_XORPD:               JITASM_ASSERT(encoder::Opcode$< I_XORPD >::Encode(instr, is64_)); break;
+            case I_XORPS:               JITASM_ASSERT(encoder::Opcode$< I_XORPS >::Encode(instr, is64_)); break;
             case I_XRELEASE:            JITASM_ASSERT(encoder::Opcode$< I_XRELEASE >::Encode(instr, is64_)); break;
             case I_XRSTOR:              JITASM_ASSERT(encoder::Opcode$< I_XRSTOR >::Encode(instr, is64_)); break;
             case I_XRSTOR64:            JITASM_ASSERT(encoder::Opcode$< I_XRSTOR64 >::Encode(instr, is64_)); break;
@@ -2841,7 +1752,6 @@ namespace jitasm
             case I_AAD:                 encoder::Opcode$< I_AAD >::Test(list, is64); break;
             case I_AAM:                 encoder::Opcode$< I_AAM >::Test(list, is64); break;
             case I_AAS:                 encoder::Opcode$< I_AAS >::Test(list, is64); break;
-            case I_FABS:                encoder::Opcode$< I_FABS >::Test(list, is64); break;
             case I_ADC:                 encoder::Opcode$< I_ADC >::Test(list, is64); break;
             case I_ADCX:                encoder::Opcode$< I_ADCX >::Test(list, is64); break;
             case I_ADD:                 encoder::Opcode$< I_ADD >::Test(list, is64); break;
@@ -2851,14 +1761,11 @@ namespace jitasm
             case I_ADDSS:               encoder::Opcode$< I_ADDSS >::Test(list, is64); break;
             case I_ADDSUBPD:            encoder::Opcode$< I_ADDSUBPD >::Test(list, is64); break;
             case I_ADDSUBPS:            encoder::Opcode$< I_ADDSUBPS >::Test(list, is64); break;
-            case I_FADD:                encoder::Opcode$< I_FADD >::Test(list, is64); break;
-            case I_FIADD:               encoder::Opcode$< I_FIADD >::Test(list, is64); break;
-            case I_FADDP:               encoder::Opcode$< I_FADDP >::Test(list, is64); break;
             case I_ADOX:                encoder::Opcode$< I_ADOX >::Test(list, is64); break;
-            case I_AESDECLAST:          encoder::Opcode$< I_AESDECLAST >::Test(list, is64); break;
             case I_AESDEC:              encoder::Opcode$< I_AESDEC >::Test(list, is64); break;
-            case I_AESENCLAST:          encoder::Opcode$< I_AESENCLAST >::Test(list, is64); break;
+            case I_AESDECLAST:          encoder::Opcode$< I_AESDECLAST >::Test(list, is64); break;
             case I_AESENC:              encoder::Opcode$< I_AESENC >::Test(list, is64); break;
+            case I_AESENCLAST:          encoder::Opcode$< I_AESENCLAST >::Test(list, is64); break;
             case I_AESIMC:              encoder::Opcode$< I_AESIMC >::Test(list, is64); break;
             case I_AESKEYGENASSIST:     encoder::Opcode$< I_AESKEYGENASSIST >::Test(list, is64); break;
             case I_AND:                 encoder::Opcode$< I_AND >::Test(list, is64); break;
@@ -2896,7 +1803,6 @@ namespace jitasm
             case I_CBW:                 encoder::Opcode$< I_CBW >::Test(list, is64); break;
             case I_CDQ:                 encoder::Opcode$< I_CDQ >::Test(list, is64); break;
             case I_CDQE:                encoder::Opcode$< I_CDQE >::Test(list, is64); break;
-            case I_FCHS:                encoder::Opcode$< I_FCHS >::Test(list, is64); break;
             case I_CLAC:                encoder::Opcode$< I_CLAC >::Test(list, is64); break;
             case I_CLC:                 encoder::Opcode$< I_CLC >::Test(list, is64); break;
             case I_CLD:                 encoder::Opcode$< I_CLD >::Test(list, is64); break;
@@ -2906,32 +1812,30 @@ namespace jitasm
             case I_CLTS:                encoder::Opcode$< I_CLTS >::Test(list, is64); break;
             case I_CMC:                 encoder::Opcode$< I_CMC >::Test(list, is64); break;
             case I_CMOVcc:              encoder::Opcode$< I_CMOVcc >::Test(list, is64); break;
-            case I_FCMOVcc:             encoder::Opcode$< I_FCMOVcc >::Test(list, is64); break;
             case I_CMP:                 encoder::Opcode$< I_CMP >::Test(list, is64); break;
-            case I_CMPS:                encoder::Opcode$< I_CMPS >::Test(list, is64); break;
             case I_CMPPD:               encoder::Opcode$< I_CMPPD >::Test(list, is64); break;
             case I_CMPPS:               encoder::Opcode$< I_CMPPS >::Test(list, is64); break;
+            case I_CMPS:                encoder::Opcode$< I_CMPS >::Test(list, is64); break;
             case I_CMPSD:               encoder::Opcode$< I_CMPSD >::Test(list, is64); break;
             case I_CMPSS:               encoder::Opcode$< I_CMPSS >::Test(list, is64); break;
-            case I_CMPXCHG16B:          encoder::Opcode$< I_CMPXCHG16B >::Test(list, is64); break;
             case I_CMPXCHG:             encoder::Opcode$< I_CMPXCHG >::Test(list, is64); break;
+            case I_CMPXCHG16B:          encoder::Opcode$< I_CMPXCHG16B >::Test(list, is64); break;
             case I_CMPXCHG8B:           encoder::Opcode$< I_CMPXCHG8B >::Test(list, is64); break;
             case I_COMISD:              encoder::Opcode$< I_COMISD >::Test(list, is64); break;
             case I_COMISS:              encoder::Opcode$< I_COMISS >::Test(list, is64); break;
-            case I_FCOMP:               encoder::Opcode$< I_FCOMP >::Test(list, is64); break;
-            case I_FCOMPI:              encoder::Opcode$< I_FCOMPI >::Test(list, is64); break;
-            case I_FCOMI:               encoder::Opcode$< I_FCOMI >::Test(list, is64); break;
-            case I_FCOM:                encoder::Opcode$< I_FCOM >::Test(list, is64); break;
-            case I_FCOS:                encoder::Opcode$< I_FCOS >::Test(list, is64); break;
             case I_CPUID:               encoder::Opcode$< I_CPUID >::Test(list, is64); break;
             case I_CQO:                 encoder::Opcode$< I_CQO >::Test(list, is64); break;
             case I_CRC32:               encoder::Opcode$< I_CRC32 >::Test(list, is64); break;
             case I_CVTDQ2PD:            encoder::Opcode$< I_CVTDQ2PD >::Test(list, is64); break;
             case I_CVTDQ2PS:            encoder::Opcode$< I_CVTDQ2PS >::Test(list, is64); break;
             case I_CVTPD2DQ:            encoder::Opcode$< I_CVTPD2DQ >::Test(list, is64); break;
+            case I_CVTPD2PI:            encoder::Opcode$< I_CVTPD2PI >::Test(list, is64); break;
             case I_CVTPD2PS:            encoder::Opcode$< I_CVTPD2PS >::Test(list, is64); break;
+            case I_CVTPI2PD:            encoder::Opcode$< I_CVTPI2PD >::Test(list, is64); break;
+            case I_CVTPI2PS:            encoder::Opcode$< I_CVTPI2PS >::Test(list, is64); break;
             case I_CVTPS2DQ:            encoder::Opcode$< I_CVTPS2DQ >::Test(list, is64); break;
             case I_CVTPS2PD:            encoder::Opcode$< I_CVTPS2PD >::Test(list, is64); break;
+            case I_CVTPS2PI:            encoder::Opcode$< I_CVTPS2PI >::Test(list, is64); break;
             case I_CVTSD2SI:            encoder::Opcode$< I_CVTSD2SI >::Test(list, is64); break;
             case I_CVTSD2SS:            encoder::Opcode$< I_CVTSD2SS >::Test(list, is64); break;
             case I_CVTSI2SD:            encoder::Opcode$< I_CVTSI2SD >::Test(list, is64); break;
@@ -2939,7 +1843,9 @@ namespace jitasm
             case I_CVTSS2SD:            encoder::Opcode$< I_CVTSS2SD >::Test(list, is64); break;
             case I_CVTSS2SI:            encoder::Opcode$< I_CVTSS2SI >::Test(list, is64); break;
             case I_CVTTPD2DQ:           encoder::Opcode$< I_CVTTPD2DQ >::Test(list, is64); break;
+            case I_CVTTPD2PI:           encoder::Opcode$< I_CVTTPD2PI >::Test(list, is64); break;
             case I_CVTTPS2DQ:           encoder::Opcode$< I_CVTTPS2DQ >::Test(list, is64); break;
+            case I_CVTTPS2PI:           encoder::Opcode$< I_CVTTPS2PI >::Test(list, is64); break;
             case I_CVTTSD2SI:           encoder::Opcode$< I_CVTTSD2SI >::Test(list, is64); break;
             case I_CVTTSS2SI:           encoder::Opcode$< I_CVTTSS2SI >::Test(list, is64); break;
             case I_CWD:                 encoder::Opcode$< I_CWD >::Test(list, is64); break;
@@ -2951,34 +1857,52 @@ namespace jitasm
             case I_DIV:                 encoder::Opcode$< I_DIV >::Test(list, is64); break;
             case I_DIVPD:               encoder::Opcode$< I_DIVPD >::Test(list, is64); break;
             case I_DIVPS:               encoder::Opcode$< I_DIVPS >::Test(list, is64); break;
-            case I_FDIVR:               encoder::Opcode$< I_FDIVR >::Test(list, is64); break;
-            case I_FIDIVR:              encoder::Opcode$< I_FIDIVR >::Test(list, is64); break;
-            case I_FDIVRP:              encoder::Opcode$< I_FDIVRP >::Test(list, is64); break;
             case I_DIVSD:               encoder::Opcode$< I_DIVSD >::Test(list, is64); break;
             case I_DIVSS:               encoder::Opcode$< I_DIVSS >::Test(list, is64); break;
-            case I_FDIV:                encoder::Opcode$< I_FDIV >::Test(list, is64); break;
-            case I_FIDIV:               encoder::Opcode$< I_FIDIV >::Test(list, is64); break;
-            case I_FDIVP:               encoder::Opcode$< I_FDIVP >::Test(list, is64); break;
             case I_DPPD:                encoder::Opcode$< I_DPPD >::Test(list, is64); break;
             case I_DPPS:                encoder::Opcode$< I_DPPS >::Test(list, is64); break;
-            case I_RET:                 encoder::Opcode$< I_RET >::Test(list, is64); break;
+            case I_EMMS:                encoder::Opcode$< I_EMMS >::Test(list, is64); break;
             case I_ENCLS:               encoder::Opcode$< I_ENCLS >::Test(list, is64); break;
             case I_ENCLU:               encoder::Opcode$< I_ENCLU >::Test(list, is64); break;
             case I_ENTER:               encoder::Opcode$< I_ENTER >::Test(list, is64); break;
             case I_EXTRACTPS:           encoder::Opcode$< I_EXTRACTPS >::Test(list, is64); break;
             case I_EXTRQ:               encoder::Opcode$< I_EXTRQ >::Test(list, is64); break;
             case I_F2XM1:               encoder::Opcode$< I_F2XM1 >::Test(list, is64); break;
-            case I_LCALL:               encoder::Opcode$< I_LCALL >::Test(list, is64); break;
-            case I_LJMP:                encoder::Opcode$< I_LJMP >::Test(list, is64); break;
+            case I_FABS:                encoder::Opcode$< I_FABS >::Test(list, is64); break;
+            case I_FADD:                encoder::Opcode$< I_FADD >::Test(list, is64); break;
+            case I_FADDP:               encoder::Opcode$< I_FADDP >::Test(list, is64); break;
             case I_FBLD:                encoder::Opcode$< I_FBLD >::Test(list, is64); break;
             case I_FBSTP:               encoder::Opcode$< I_FBSTP >::Test(list, is64); break;
+            case I_FCHS:                encoder::Opcode$< I_FCHS >::Test(list, is64); break;
+            case I_FCMOVcc:             encoder::Opcode$< I_FCMOVcc >::Test(list, is64); break;
+            case I_FCOM:                encoder::Opcode$< I_FCOM >::Test(list, is64); break;
+            case I_FCOMI:               encoder::Opcode$< I_FCOMI >::Test(list, is64); break;
+            case I_FCOMP:               encoder::Opcode$< I_FCOMP >::Test(list, is64); break;
+            case I_FCOMPI:              encoder::Opcode$< I_FCOMPI >::Test(list, is64); break;
             case I_FCOMPP:              encoder::Opcode$< I_FCOMPP >::Test(list, is64); break;
+            case I_FCOS:                encoder::Opcode$< I_FCOS >::Test(list, is64); break;
             case I_FDECSTP:             encoder::Opcode$< I_FDECSTP >::Test(list, is64); break;
+            case I_FDIV:                encoder::Opcode$< I_FDIV >::Test(list, is64); break;
+            case I_FDIVP:               encoder::Opcode$< I_FDIVP >::Test(list, is64); break;
+            case I_FDIVR:               encoder::Opcode$< I_FDIVR >::Test(list, is64); break;
+            case I_FDIVRP:              encoder::Opcode$< I_FDIVRP >::Test(list, is64); break;
             case I_FEMMS:               encoder::Opcode$< I_FEMMS >::Test(list, is64); break;
             case I_FFREE:               encoder::Opcode$< I_FFREE >::Test(list, is64); break;
+            case I_FIADD:               encoder::Opcode$< I_FIADD >::Test(list, is64); break;
             case I_FICOM:               encoder::Opcode$< I_FICOM >::Test(list, is64); break;
             case I_FICOMP:              encoder::Opcode$< I_FICOMP >::Test(list, is64); break;
+            case I_FIDIV:               encoder::Opcode$< I_FIDIV >::Test(list, is64); break;
+            case I_FIDIVR:              encoder::Opcode$< I_FIDIVR >::Test(list, is64); break;
+            case I_FILD:                encoder::Opcode$< I_FILD >::Test(list, is64); break;
+            case I_FIMUL:               encoder::Opcode$< I_FIMUL >::Test(list, is64); break;
             case I_FINCSTP:             encoder::Opcode$< I_FINCSTP >::Test(list, is64); break;
+            case I_FIST:                encoder::Opcode$< I_FIST >::Test(list, is64); break;
+            case I_FISTP:               encoder::Opcode$< I_FISTP >::Test(list, is64); break;
+            case I_FISTTP:              encoder::Opcode$< I_FISTTP >::Test(list, is64); break;
+            case I_FISUB:               encoder::Opcode$< I_FISUB >::Test(list, is64); break;
+            case I_FISUBR:              encoder::Opcode$< I_FISUBR >::Test(list, is64); break;
+            case I_FLD:                 encoder::Opcode$< I_FLD >::Test(list, is64); break;
+            case I_FLD1:                encoder::Opcode$< I_FLD1 >::Test(list, is64); break;
             case I_FLDCW:               encoder::Opcode$< I_FLDCW >::Test(list, is64); break;
             case I_FLDENV:              encoder::Opcode$< I_FLDENV >::Test(list, is64); break;
             case I_FLDL2E:              encoder::Opcode$< I_FLDL2E >::Test(list, is64); break;
@@ -2986,10 +1910,15 @@ namespace jitasm
             case I_FLDLG2:              encoder::Opcode$< I_FLDLG2 >::Test(list, is64); break;
             case I_FLDLN2:              encoder::Opcode$< I_FLDLN2 >::Test(list, is64); break;
             case I_FLDPI:               encoder::Opcode$< I_FLDPI >::Test(list, is64); break;
+            case I_FLDZ:                encoder::Opcode$< I_FLDZ >::Test(list, is64); break;
+            case I_FMUL:                encoder::Opcode$< I_FMUL >::Test(list, is64); break;
+            case I_FMULP:               encoder::Opcode$< I_FMULP >::Test(list, is64); break;
             case I_FNCLEX:              encoder::Opcode$< I_FNCLEX >::Test(list, is64); break;
             case I_FNINIT:              encoder::Opcode$< I_FNINIT >::Test(list, is64); break;
             case I_FNOP:                encoder::Opcode$< I_FNOP >::Test(list, is64); break;
+            case I_FNSAVE:              encoder::Opcode$< I_FNSAVE >::Test(list, is64); break;
             case I_FNSTCW:              encoder::Opcode$< I_FNSTCW >::Test(list, is64); break;
+            case I_FNSTENV:             encoder::Opcode$< I_FNSTENV >::Test(list, is64); break;
             case I_FNSTSW:              encoder::Opcode$< I_FNSTSW >::Test(list, is64); break;
             case I_FPATAN:              encoder::Opcode$< I_FPATAN >::Test(list, is64); break;
             case I_FPREM:               encoder::Opcode$< I_FPREM >::Test(list, is64); break;
@@ -2997,12 +1926,26 @@ namespace jitasm
             case I_FPTAN:               encoder::Opcode$< I_FPTAN >::Test(list, is64); break;
             case I_FRNDINT:             encoder::Opcode$< I_FRNDINT >::Test(list, is64); break;
             case I_FRSTOR:              encoder::Opcode$< I_FRSTOR >::Test(list, is64); break;
-            case I_FNSAVE:              encoder::Opcode$< I_FNSAVE >::Test(list, is64); break;
             case I_FSCALE:              encoder::Opcode$< I_FSCALE >::Test(list, is64); break;
             case I_FSETPM:              encoder::Opcode$< I_FSETPM >::Test(list, is64); break;
+            case I_FSIN:                encoder::Opcode$< I_FSIN >::Test(list, is64); break;
             case I_FSINCOS:             encoder::Opcode$< I_FSINCOS >::Test(list, is64); break;
-            case I_FNSTENV:             encoder::Opcode$< I_FNSTENV >::Test(list, is64); break;
+            case I_FSQRT:               encoder::Opcode$< I_FSQRT >::Test(list, is64); break;
+            case I_FST:                 encoder::Opcode$< I_FST >::Test(list, is64); break;
+            case I_FSTP:                encoder::Opcode$< I_FSTP >::Test(list, is64); break;
+            case I_FSTPNCE:             encoder::Opcode$< I_FSTPNCE >::Test(list, is64); break;
+            case I_FSUB:                encoder::Opcode$< I_FSUB >::Test(list, is64); break;
+            case I_FSUBP:               encoder::Opcode$< I_FSUBP >::Test(list, is64); break;
+            case I_FSUBR:               encoder::Opcode$< I_FSUBR >::Test(list, is64); break;
+            case I_FSUBRP:              encoder::Opcode$< I_FSUBRP >::Test(list, is64); break;
+            case I_FTST:                encoder::Opcode$< I_FTST >::Test(list, is64); break;
+            case I_FUCOM:               encoder::Opcode$< I_FUCOM >::Test(list, is64); break;
+            case I_FUCOMI:              encoder::Opcode$< I_FUCOMI >::Test(list, is64); break;
+            case I_FUCOMP:              encoder::Opcode$< I_FUCOMP >::Test(list, is64); break;
+            case I_FUCOMPI:             encoder::Opcode$< I_FUCOMPI >::Test(list, is64); break;
+            case I_FUCOMPP:             encoder::Opcode$< I_FUCOMPP >::Test(list, is64); break;
             case I_FXAM:                encoder::Opcode$< I_FXAM >::Test(list, is64); break;
+            case I_FXCH:                encoder::Opcode$< I_FXCH >::Test(list, is64); break;
             case I_FXRSTOR:             encoder::Opcode$< I_FXRSTOR >::Test(list, is64); break;
             case I_FXRSTOR64:           encoder::Opcode$< I_FXRSTOR64 >::Test(list, is64); break;
             case I_FXSAVE:              encoder::Opcode$< I_FXSAVE >::Test(list, is64); break;
@@ -3010,14 +1953,6 @@ namespace jitasm
             case I_FXTRACT:             encoder::Opcode$< I_FXTRACT >::Test(list, is64); break;
             case I_FYL2X:               encoder::Opcode$< I_FYL2X >::Test(list, is64); break;
             case I_FYL2XP1:             encoder::Opcode$< I_FYL2XP1 >::Test(list, is64); break;
-            case I_MOVAPD:              encoder::Opcode$< I_MOVAPD >::Test(list, is64); break;
-            case I_MOVAPS:              encoder::Opcode$< I_MOVAPS >::Test(list, is64); break;
-            case I_ORPD:                encoder::Opcode$< I_ORPD >::Test(list, is64); break;
-            case I_ORPS:                encoder::Opcode$< I_ORPS >::Test(list, is64); break;
-            case I_VMOVAPD:             encoder::Opcode$< I_VMOVAPD >::Test(list, is64); break;
-            case I_VMOVAPS:             encoder::Opcode$< I_VMOVAPS >::Test(list, is64); break;
-            case I_XORPD:               encoder::Opcode$< I_XORPD >::Test(list, is64); break;
-            case I_XORPS:               encoder::Opcode$< I_XORPS >::Test(list, is64); break;
             case I_GETSEC:              encoder::Opcode$< I_GETSEC >::Test(list, is64); break;
             case I_HADDPD:              encoder::Opcode$< I_HADDPD >::Test(list, is64); break;
             case I_HADDPS:              encoder::Opcode$< I_HADDPS >::Test(list, is64); break;
@@ -3025,15 +1960,12 @@ namespace jitasm
             case I_HSUBPD:              encoder::Opcode$< I_HSUBPD >::Test(list, is64); break;
             case I_HSUBPS:              encoder::Opcode$< I_HSUBPS >::Test(list, is64); break;
             case I_IDIV:                encoder::Opcode$< I_IDIV >::Test(list, is64); break;
-            case I_FILD:                encoder::Opcode$< I_FILD >::Test(list, is64); break;
             case I_IMUL:                encoder::Opcode$< I_IMUL >::Test(list, is64); break;
             case I_IN:                  encoder::Opcode$< I_IN >::Test(list, is64); break;
             case I_INC:                 encoder::Opcode$< I_INC >::Test(list, is64); break;
-            case I_INSB:                encoder::Opcode$< I_INSB >::Test(list, is64); break;
+            case I_INS:                 encoder::Opcode$< I_INS >::Test(list, is64); break;
             case I_INSERTPS:            encoder::Opcode$< I_INSERTPS >::Test(list, is64); break;
             case I_INSERTQ:             encoder::Opcode$< I_INSERTQ >::Test(list, is64); break;
-            case I_INSD:                encoder::Opcode$< I_INSD >::Test(list, is64); break;
-            case I_INSW:                encoder::Opcode$< I_INSW >::Test(list, is64); break;
             case I_INT:                 encoder::Opcode$< I_INT >::Test(list, is64); break;
             case I_INT1:                encoder::Opcode$< I_INT1 >::Test(list, is64); break;
             case I_INT3:                encoder::Opcode$< I_INT3 >::Test(list, is64); break;
@@ -3047,26 +1979,6 @@ namespace jitasm
             case I_IRET:                encoder::Opcode$< I_IRET >::Test(list, is64); break;
             case I_IRETD:               encoder::Opcode$< I_IRETD >::Test(list, is64); break;
             case I_IRETQ:               encoder::Opcode$< I_IRETQ >::Test(list, is64); break;
-            case I_FISTTP:              encoder::Opcode$< I_FISTTP >::Test(list, is64); break;
-            case I_FIST:                encoder::Opcode$< I_FIST >::Test(list, is64); break;
-            case I_FISTP:               encoder::Opcode$< I_FISTP >::Test(list, is64); break;
-            case I_UCOMISD:             encoder::Opcode$< I_UCOMISD >::Test(list, is64); break;
-            case I_UCOMISS:             encoder::Opcode$< I_UCOMISS >::Test(list, is64); break;
-            case I_VCMP:                encoder::Opcode$< I_VCMP >::Test(list, is64); break;
-            case I_VCOMISD:             encoder::Opcode$< I_VCOMISD >::Test(list, is64); break;
-            case I_VCOMISS:             encoder::Opcode$< I_VCOMISS >::Test(list, is64); break;
-            case I_VCVTSD2SS:           encoder::Opcode$< I_VCVTSD2SS >::Test(list, is64); break;
-            case I_VCVTSI2SD:           encoder::Opcode$< I_VCVTSI2SD >::Test(list, is64); break;
-            case I_VCVTSI2SS:           encoder::Opcode$< I_VCVTSI2SS >::Test(list, is64); break;
-            case I_VCVTSS2SD:           encoder::Opcode$< I_VCVTSS2SD >::Test(list, is64); break;
-            case I_VCVTTSD2SI:          encoder::Opcode$< I_VCVTTSD2SI >::Test(list, is64); break;
-            case I_VCVTTSD2USI:         encoder::Opcode$< I_VCVTTSD2USI >::Test(list, is64); break;
-            case I_VCVTTSS2SI:          encoder::Opcode$< I_VCVTTSS2SI >::Test(list, is64); break;
-            case I_VCVTTSS2USI:         encoder::Opcode$< I_VCVTTSS2USI >::Test(list, is64); break;
-            case I_VCVTUSI2SD:          encoder::Opcode$< I_VCVTUSI2SD >::Test(list, is64); break;
-            case I_VCVTUSI2SS:          encoder::Opcode$< I_VCVTUSI2SS >::Test(list, is64); break;
-            case I_VUCOMISD:            encoder::Opcode$< I_VUCOMISD >::Test(list, is64); break;
-            case I_VUCOMISS:            encoder::Opcode$< I_VUCOMISS >::Test(list, is64); break;
             case I_JCC:                 encoder::Opcode$< I_JCC >::Test(list, is64); break;
             case I_JMP:                 encoder::Opcode$< I_JMP >::Test(list, is64); break;
             case I_KANDB:               encoder::Opcode$< I_KANDB >::Test(list, is64); break;
@@ -3103,12 +2015,10 @@ namespace jitasm
             case I_KXORW:               encoder::Opcode$< I_KXORW >::Test(list, is64); break;
             case I_LAHF:                encoder::Opcode$< I_LAHF >::Test(list, is64); break;
             case I_LAR:                 encoder::Opcode$< I_LAR >::Test(list, is64); break;
+            case I_LCALL:               encoder::Opcode$< I_LCALL >::Test(list, is64); break;
             case I_LDDQU:               encoder::Opcode$< I_LDDQU >::Test(list, is64); break;
             case I_LDMXCSR:             encoder::Opcode$< I_LDMXCSR >::Test(list, is64); break;
             case I_LDS:                 encoder::Opcode$< I_LDS >::Test(list, is64); break;
-            case I_FLDZ:                encoder::Opcode$< I_FLDZ >::Test(list, is64); break;
-            case I_FLD1:                encoder::Opcode$< I_FLD1 >::Test(list, is64); break;
-            case I_FLD:                 encoder::Opcode$< I_FLD >::Test(list, is64); break;
             case I_LEA:                 encoder::Opcode$< I_LEA >::Test(list, is64); break;
             case I_LEAVE:               encoder::Opcode$< I_LEAVE >::Test(list, is64); break;
             case I_LES:                 encoder::Opcode$< I_LES >::Test(list, is64); break;
@@ -3117,22 +2027,18 @@ namespace jitasm
             case I_LGDT:                encoder::Opcode$< I_LGDT >::Test(list, is64); break;
             case I_LGS:                 encoder::Opcode$< I_LGS >::Test(list, is64); break;
             case I_LIDT:                encoder::Opcode$< I_LIDT >::Test(list, is64); break;
+            case I_LJMP:                encoder::Opcode$< I_LJMP >::Test(list, is64); break;
             case I_LLDT:                encoder::Opcode$< I_LLDT >::Test(list, is64); break;
             case I_LMSW:                encoder::Opcode$< I_LMSW >::Test(list, is64); break;
-            case I_OR:                  encoder::Opcode$< I_OR >::Test(list, is64); break;
             case I_LOCK:                encoder::Opcode$< I_LOCK >::Test(list, is64); break;
-            case I_SUB:                 encoder::Opcode$< I_SUB >::Test(list, is64); break;
-            case I_XOR:                 encoder::Opcode$< I_XOR >::Test(list, is64); break;
             case I_LODS:                encoder::Opcode$< I_LODS >::Test(list, is64); break;
             case I_LOOPCC:              encoder::Opcode$< I_LOOPCC >::Test(list, is64); break;
-            case I_RETF:                encoder::Opcode$< I_RETF >::Test(list, is64); break;
-            case I_RETFQ:               encoder::Opcode$< I_RETFQ >::Test(list, is64); break;
             case I_LSL:                 encoder::Opcode$< I_LSL >::Test(list, is64); break;
             case I_LSS:                 encoder::Opcode$< I_LSS >::Test(list, is64); break;
             case I_LTR:                 encoder::Opcode$< I_LTR >::Test(list, is64); break;
-            case I_XADD:                encoder::Opcode$< I_XADD >::Test(list, is64); break;
             case I_LZCNT:               encoder::Opcode$< I_LZCNT >::Test(list, is64); break;
             case I_MASKMOVDQU:          encoder::Opcode$< I_MASKMOVDQU >::Test(list, is64); break;
+            case I_MASKMOVQ:            encoder::Opcode$< I_MASKMOVQ >::Test(list, is64); break;
             case I_MAXPD:               encoder::Opcode$< I_MAXPD >::Test(list, is64); break;
             case I_MAXPS:               encoder::Opcode$< I_MAXPS >::Test(list, is64); break;
             case I_MAXSD:               encoder::Opcode$< I_MAXSD >::Test(list, is64); break;
@@ -3142,100 +2048,16 @@ namespace jitasm
             case I_MINPS:               encoder::Opcode$< I_MINPS >::Test(list, is64); break;
             case I_MINSD:               encoder::Opcode$< I_MINSD >::Test(list, is64); break;
             case I_MINSS:               encoder::Opcode$< I_MINSS >::Test(list, is64); break;
-            case I_CVTPD2PI:            encoder::Opcode$< I_CVTPD2PI >::Test(list, is64); break;
-            case I_CVTPI2PD:            encoder::Opcode$< I_CVTPI2PD >::Test(list, is64); break;
-            case I_CVTPI2PS:            encoder::Opcode$< I_CVTPI2PS >::Test(list, is64); break;
-            case I_CVTPS2PI:            encoder::Opcode$< I_CVTPS2PI >::Test(list, is64); break;
-            case I_CVTTPD2PI:           encoder::Opcode$< I_CVTTPD2PI >::Test(list, is64); break;
-            case I_CVTTPS2PI:           encoder::Opcode$< I_CVTTPS2PI >::Test(list, is64); break;
-            case I_EMMS:                encoder::Opcode$< I_EMMS >::Test(list, is64); break;
-            case I_MASKMOVQ:            encoder::Opcode$< I_MASKMOVQ >::Test(list, is64); break;
-            case I_MOVD:                encoder::Opcode$< I_MOVD >::Test(list, is64); break;
-            case I_MOVDQ2Q:             encoder::Opcode$< I_MOVDQ2Q >::Test(list, is64); break;
-            case I_MOVNTQ:              encoder::Opcode$< I_MOVNTQ >::Test(list, is64); break;
-            case I_MOVQ2DQ:             encoder::Opcode$< I_MOVQ2DQ >::Test(list, is64); break;
-            case I_MOVQ:                encoder::Opcode$< I_MOVQ >::Test(list, is64); break;
-            case I_PABSB:               encoder::Opcode$< I_PABSB >::Test(list, is64); break;
-            case I_PABSD:               encoder::Opcode$< I_PABSD >::Test(list, is64); break;
-            case I_PABSW:               encoder::Opcode$< I_PABSW >::Test(list, is64); break;
-            case I_PACKSSDW:            encoder::Opcode$< I_PACKSSDW >::Test(list, is64); break;
-            case I_PACKSSWB:            encoder::Opcode$< I_PACKSSWB >::Test(list, is64); break;
-            case I_PACKUSWB:            encoder::Opcode$< I_PACKUSWB >::Test(list, is64); break;
-            case I_PADDB:               encoder::Opcode$< I_PADDB >::Test(list, is64); break;
-            case I_PADDD:               encoder::Opcode$< I_PADDD >::Test(list, is64); break;
-            case I_PADDQ:               encoder::Opcode$< I_PADDQ >::Test(list, is64); break;
-            case I_PADDSB:              encoder::Opcode$< I_PADDSB >::Test(list, is64); break;
-            case I_PADDSW:              encoder::Opcode$< I_PADDSW >::Test(list, is64); break;
-            case I_PADDUSB:             encoder::Opcode$< I_PADDUSB >::Test(list, is64); break;
-            case I_PADDUSW:             encoder::Opcode$< I_PADDUSW >::Test(list, is64); break;
-            case I_PADDW:               encoder::Opcode$< I_PADDW >::Test(list, is64); break;
-            case I_PALIGNR:             encoder::Opcode$< I_PALIGNR >::Test(list, is64); break;
-            case I_PANDN:               encoder::Opcode$< I_PANDN >::Test(list, is64); break;
-            case I_PAND:                encoder::Opcode$< I_PAND >::Test(list, is64); break;
-            case I_PAVGB:               encoder::Opcode$< I_PAVGB >::Test(list, is64); break;
-            case I_PAVGW:               encoder::Opcode$< I_PAVGW >::Test(list, is64); break;
-            case I_PCMPEQB:             encoder::Opcode$< I_PCMPEQB >::Test(list, is64); break;
-            case I_PCMPEQD:             encoder::Opcode$< I_PCMPEQD >::Test(list, is64); break;
-            case I_PCMPEQW:             encoder::Opcode$< I_PCMPEQW >::Test(list, is64); break;
-            case I_PCMPGTB:             encoder::Opcode$< I_PCMPGTB >::Test(list, is64); break;
-            case I_PCMPGTD:             encoder::Opcode$< I_PCMPGTD >::Test(list, is64); break;
-            case I_PCMPGTW:             encoder::Opcode$< I_PCMPGTW >::Test(list, is64); break;
-            case I_PEXTRW:              encoder::Opcode$< I_PEXTRW >::Test(list, is64); break;
-            case I_PHADDSW:             encoder::Opcode$< I_PHADDSW >::Test(list, is64); break;
-            case I_PHADDW:              encoder::Opcode$< I_PHADDW >::Test(list, is64); break;
-            case I_PHADDD:              encoder::Opcode$< I_PHADDD >::Test(list, is64); break;
-            case I_PHSUBD:              encoder::Opcode$< I_PHSUBD >::Test(list, is64); break;
-            case I_PHSUBSW:             encoder::Opcode$< I_PHSUBSW >::Test(list, is64); break;
-            case I_PHSUBW:              encoder::Opcode$< I_PHSUBW >::Test(list, is64); break;
-            case I_PINSRW:              encoder::Opcode$< I_PINSRW >::Test(list, is64); break;
-            case I_PMADDUBSW:           encoder::Opcode$< I_PMADDUBSW >::Test(list, is64); break;
-            case I_PMADDWD:             encoder::Opcode$< I_PMADDWD >::Test(list, is64); break;
-            case I_PMAXSW:              encoder::Opcode$< I_PMAXSW >::Test(list, is64); break;
-            case I_PMAXUB:              encoder::Opcode$< I_PMAXUB >::Test(list, is64); break;
-            case I_PMINSW:              encoder::Opcode$< I_PMINSW >::Test(list, is64); break;
-            case I_PMINUB:              encoder::Opcode$< I_PMINUB >::Test(list, is64); break;
-            case I_PMOVMSKB:            encoder::Opcode$< I_PMOVMSKB >::Test(list, is64); break;
-            case I_PMULHRSW:            encoder::Opcode$< I_PMULHRSW >::Test(list, is64); break;
-            case I_PMULHUW:             encoder::Opcode$< I_PMULHUW >::Test(list, is64); break;
-            case I_PMULHW:              encoder::Opcode$< I_PMULHW >::Test(list, is64); break;
-            case I_PMULLW:              encoder::Opcode$< I_PMULLW >::Test(list, is64); break;
-            case I_PMULUDQ:             encoder::Opcode$< I_PMULUDQ >::Test(list, is64); break;
-            case I_POR:                 encoder::Opcode$< I_POR >::Test(list, is64); break;
-            case I_PSADBW:              encoder::Opcode$< I_PSADBW >::Test(list, is64); break;
-            case I_PSHUFB:              encoder::Opcode$< I_PSHUFB >::Test(list, is64); break;
-            case I_PSHUFW:              encoder::Opcode$< I_PSHUFW >::Test(list, is64); break;
-            case I_PSIGNB:              encoder::Opcode$< I_PSIGNB >::Test(list, is64); break;
-            case I_PSIGND:              encoder::Opcode$< I_PSIGND >::Test(list, is64); break;
-            case I_PSIGNW:              encoder::Opcode$< I_PSIGNW >::Test(list, is64); break;
-            case I_PSLLD:               encoder::Opcode$< I_PSLLD >::Test(list, is64); break;
-            case I_PSLLQ:               encoder::Opcode$< I_PSLLQ >::Test(list, is64); break;
-            case I_PSLLW:               encoder::Opcode$< I_PSLLW >::Test(list, is64); break;
-            case I_PSRAD:               encoder::Opcode$< I_PSRAD >::Test(list, is64); break;
-            case I_PSRAW:               encoder::Opcode$< I_PSRAW >::Test(list, is64); break;
-            case I_PSRLD:               encoder::Opcode$< I_PSRLD >::Test(list, is64); break;
-            case I_PSRLQ:               encoder::Opcode$< I_PSRLQ >::Test(list, is64); break;
-            case I_PSRLW:               encoder::Opcode$< I_PSRLW >::Test(list, is64); break;
-            case I_PSUBB:               encoder::Opcode$< I_PSUBB >::Test(list, is64); break;
-            case I_PSUBD:               encoder::Opcode$< I_PSUBD >::Test(list, is64); break;
-            case I_PSUBQ:               encoder::Opcode$< I_PSUBQ >::Test(list, is64); break;
-            case I_PSUBSB:              encoder::Opcode$< I_PSUBSB >::Test(list, is64); break;
-            case I_PSUBSW:              encoder::Opcode$< I_PSUBSW >::Test(list, is64); break;
-            case I_PSUBUSB:             encoder::Opcode$< I_PSUBUSB >::Test(list, is64); break;
-            case I_PSUBUSW:             encoder::Opcode$< I_PSUBUSW >::Test(list, is64); break;
-            case I_PSUBW:               encoder::Opcode$< I_PSUBW >::Test(list, is64); break;
-            case I_PUNPCKHBW:           encoder::Opcode$< I_PUNPCKHBW >::Test(list, is64); break;
-            case I_PUNPCKHDQ:           encoder::Opcode$< I_PUNPCKHDQ >::Test(list, is64); break;
-            case I_PUNPCKHWD:           encoder::Opcode$< I_PUNPCKHWD >::Test(list, is64); break;
-            case I_PUNPCKLBW:           encoder::Opcode$< I_PUNPCKLBW >::Test(list, is64); break;
-            case I_PUNPCKLDQ:           encoder::Opcode$< I_PUNPCKLDQ >::Test(list, is64); break;
-            case I_PUNPCKLWD:           encoder::Opcode$< I_PUNPCKLWD >::Test(list, is64); break;
-            case I_PXOR:                encoder::Opcode$< I_PXOR >::Test(list, is64); break;
             case I_MONITOR:             encoder::Opcode$< I_MONITOR >::Test(list, is64); break;
             case I_MONTMUL:             encoder::Opcode$< I_MONTMUL >::Test(list, is64); break;
             case I_MOV:                 encoder::Opcode$< I_MOV >::Test(list, is64); break;
             case I_MOVABS:              encoder::Opcode$< I_MOVABS >::Test(list, is64); break;
+            case I_MOVAPD:              encoder::Opcode$< I_MOVAPD >::Test(list, is64); break;
+            case I_MOVAPS:              encoder::Opcode$< I_MOVAPS >::Test(list, is64); break;
             case I_MOVBE:               encoder::Opcode$< I_MOVBE >::Test(list, is64); break;
+            case I_MOVD:                encoder::Opcode$< I_MOVD >::Test(list, is64); break;
             case I_MOVDDUP:             encoder::Opcode$< I_MOVDDUP >::Test(list, is64); break;
+            case I_MOVDQ2Q:             encoder::Opcode$< I_MOVDQ2Q >::Test(list, is64); break;
             case I_MOVDQA:              encoder::Opcode$< I_MOVDQA >::Test(list, is64); break;
             case I_MOVDQU:              encoder::Opcode$< I_MOVDQU >::Test(list, is64); break;
             case I_MOVHLPS:             encoder::Opcode$< I_MOVHLPS >::Test(list, is64); break;
@@ -3246,14 +2068,18 @@ namespace jitasm
             case I_MOVLPS:              encoder::Opcode$< I_MOVLPS >::Test(list, is64); break;
             case I_MOVMSKPD:            encoder::Opcode$< I_MOVMSKPD >::Test(list, is64); break;
             case I_MOVMSKPS:            encoder::Opcode$< I_MOVMSKPS >::Test(list, is64); break;
-            case I_MOVNTDQA:            encoder::Opcode$< I_MOVNTDQA >::Test(list, is64); break;
             case I_MOVNTDQ:             encoder::Opcode$< I_MOVNTDQ >::Test(list, is64); break;
+            case I_MOVNTDQA:            encoder::Opcode$< I_MOVNTDQA >::Test(list, is64); break;
             case I_MOVNTI:              encoder::Opcode$< I_MOVNTI >::Test(list, is64); break;
             case I_MOVNTPD:             encoder::Opcode$< I_MOVNTPD >::Test(list, is64); break;
             case I_MOVNTPS:             encoder::Opcode$< I_MOVNTPS >::Test(list, is64); break;
+            case I_MOVNTQ:              encoder::Opcode$< I_MOVNTQ >::Test(list, is64); break;
             case I_MOVNTSD:             encoder::Opcode$< I_MOVNTSD >::Test(list, is64); break;
             case I_MOVNTSS:             encoder::Opcode$< I_MOVNTSS >::Test(list, is64); break;
+            case I_MOVQ:                encoder::Opcode$< I_MOVQ >::Test(list, is64); break;
+            case I_MOVQ2DQ:             encoder::Opcode$< I_MOVQ2DQ >::Test(list, is64); break;
             case I_MOVS:                encoder::Opcode$< I_MOVS >::Test(list, is64); break;
+            case I_MOVSD:               encoder::Opcode$< I_MOVSD >::Test(list, is64); break;
             case I_MOVSHDUP:            encoder::Opcode$< I_MOVSHDUP >::Test(list, is64); break;
             case I_MOVSLDUP:            encoder::Opcode$< I_MOVSLDUP >::Test(list, is64); break;
             case I_MOVSS:               encoder::Opcode$< I_MOVSS >::Test(list, is64); break;
@@ -3269,27 +2095,50 @@ namespace jitasm
             case I_MULSD:               encoder::Opcode$< I_MULSD >::Test(list, is64); break;
             case I_MULSS:               encoder::Opcode$< I_MULSS >::Test(list, is64); break;
             case I_MULX:                encoder::Opcode$< I_MULX >::Test(list, is64); break;
-            case I_FMUL:                encoder::Opcode$< I_FMUL >::Test(list, is64); break;
-            case I_FIMUL:               encoder::Opcode$< I_FIMUL >::Test(list, is64); break;
-            case I_FMULP:               encoder::Opcode$< I_FMULP >::Test(list, is64); break;
             case I_MWAIT:               encoder::Opcode$< I_MWAIT >::Test(list, is64); break;
             case I_NEG:                 encoder::Opcode$< I_NEG >::Test(list, is64); break;
             case I_NOP:                 encoder::Opcode$< I_NOP >::Test(list, is64); break;
             case I_NOT:                 encoder::Opcode$< I_NOT >::Test(list, is64); break;
+            case I_OR:                  encoder::Opcode$< I_OR >::Test(list, is64); break;
+            case I_ORPD:                encoder::Opcode$< I_ORPD >::Test(list, is64); break;
+            case I_ORPS:                encoder::Opcode$< I_ORPS >::Test(list, is64); break;
             case I_OUT:                 encoder::Opcode$< I_OUT >::Test(list, is64); break;
-            case I_OUTSB:               encoder::Opcode$< I_OUTSB >::Test(list, is64); break;
-            case I_OUTSD:               encoder::Opcode$< I_OUTSD >::Test(list, is64); break;
-            case I_OUTSW:               encoder::Opcode$< I_OUTSW >::Test(list, is64); break;
+            case I_OUTS:                encoder::Opcode$< I_OUTS >::Test(list, is64); break;
+            case I_PABSB:               encoder::Opcode$< I_PABSB >::Test(list, is64); break;
+            case I_PABSD:               encoder::Opcode$< I_PABSD >::Test(list, is64); break;
+            case I_PABSW:               encoder::Opcode$< I_PABSW >::Test(list, is64); break;
+            case I_PACKSSDW:            encoder::Opcode$< I_PACKSSDW >::Test(list, is64); break;
+            case I_PACKSSWB:            encoder::Opcode$< I_PACKSSWB >::Test(list, is64); break;
             case I_PACKUSDW:            encoder::Opcode$< I_PACKUSDW >::Test(list, is64); break;
+            case I_PACKUSWB:            encoder::Opcode$< I_PACKUSWB >::Test(list, is64); break;
+            case I_PADDB:               encoder::Opcode$< I_PADDB >::Test(list, is64); break;
+            case I_PADDD:               encoder::Opcode$< I_PADDD >::Test(list, is64); break;
+            case I_PADDQ:               encoder::Opcode$< I_PADDQ >::Test(list, is64); break;
+            case I_PADDSB:              encoder::Opcode$< I_PADDSB >::Test(list, is64); break;
+            case I_PADDSW:              encoder::Opcode$< I_PADDSW >::Test(list, is64); break;
+            case I_PADDUSB:             encoder::Opcode$< I_PADDUSB >::Test(list, is64); break;
+            case I_PADDUSW:             encoder::Opcode$< I_PADDUSW >::Test(list, is64); break;
+            case I_PADDW:               encoder::Opcode$< I_PADDW >::Test(list, is64); break;
+            case I_PALIGNR:             encoder::Opcode$< I_PALIGNR >::Test(list, is64); break;
+            case I_PAND:                encoder::Opcode$< I_PAND >::Test(list, is64); break;
+            case I_PANDN:               encoder::Opcode$< I_PANDN >::Test(list, is64); break;
             case I_PAUSE:               encoder::Opcode$< I_PAUSE >::Test(list, is64); break;
+            case I_PAVGB:               encoder::Opcode$< I_PAVGB >::Test(list, is64); break;
             case I_PAVGUSB:             encoder::Opcode$< I_PAVGUSB >::Test(list, is64); break;
+            case I_PAVGW:               encoder::Opcode$< I_PAVGW >::Test(list, is64); break;
             case I_PBLENDVB:            encoder::Opcode$< I_PBLENDVB >::Test(list, is64); break;
             case I_PBLENDW:             encoder::Opcode$< I_PBLENDW >::Test(list, is64); break;
             case I_PCLMULQDQ:           encoder::Opcode$< I_PCLMULQDQ >::Test(list, is64); break;
+            case I_PCMPEQB:             encoder::Opcode$< I_PCMPEQB >::Test(list, is64); break;
+            case I_PCMPEQD:             encoder::Opcode$< I_PCMPEQD >::Test(list, is64); break;
             case I_PCMPEQQ:             encoder::Opcode$< I_PCMPEQQ >::Test(list, is64); break;
+            case I_PCMPEQW:             encoder::Opcode$< I_PCMPEQW >::Test(list, is64); break;
             case I_PCMPESTRI:           encoder::Opcode$< I_PCMPESTRI >::Test(list, is64); break;
             case I_PCMPESTRM:           encoder::Opcode$< I_PCMPESTRM >::Test(list, is64); break;
+            case I_PCMPGTB:             encoder::Opcode$< I_PCMPGTB >::Test(list, is64); break;
+            case I_PCMPGTD:             encoder::Opcode$< I_PCMPGTD >::Test(list, is64); break;
             case I_PCMPGTQ:             encoder::Opcode$< I_PCMPGTQ >::Test(list, is64); break;
+            case I_PCMPGTW:             encoder::Opcode$< I_PCMPGTW >::Test(list, is64); break;
             case I_PCMPISTRI:           encoder::Opcode$< I_PCMPISTRI >::Test(list, is64); break;
             case I_PCMPISTRM:           encoder::Opcode$< I_PCMPISTRM >::Test(list, is64); break;
             case I_PDEP:                encoder::Opcode$< I_PDEP >::Test(list, is64); break;
@@ -3297,6 +2146,7 @@ namespace jitasm
             case I_PEXTRB:              encoder::Opcode$< I_PEXTRB >::Test(list, is64); break;
             case I_PEXTRD:              encoder::Opcode$< I_PEXTRD >::Test(list, is64); break;
             case I_PEXTRQ:              encoder::Opcode$< I_PEXTRQ >::Test(list, is64); break;
+            case I_PEXTRW:              encoder::Opcode$< I_PEXTRW >::Test(list, is64); break;
             case I_PF2ID:               encoder::Opcode$< I_PF2ID >::Test(list, is64); break;
             case I_PF2IW:               encoder::Opcode$< I_PF2IW >::Test(list, is64); break;
             case I_PFACC:               encoder::Opcode$< I_PFACC >::Test(list, is64); break;
@@ -3309,27 +2159,41 @@ namespace jitasm
             case I_PFMUL:               encoder::Opcode$< I_PFMUL >::Test(list, is64); break;
             case I_PFNACC:              encoder::Opcode$< I_PFNACC >::Test(list, is64); break;
             case I_PFPNACC:             encoder::Opcode$< I_PFPNACC >::Test(list, is64); break;
+            case I_PFRCP:               encoder::Opcode$< I_PFRCP >::Test(list, is64); break;
             case I_PFRCPIT1:            encoder::Opcode$< I_PFRCPIT1 >::Test(list, is64); break;
             case I_PFRCPIT2:            encoder::Opcode$< I_PFRCPIT2 >::Test(list, is64); break;
-            case I_PFRCP:               encoder::Opcode$< I_PFRCP >::Test(list, is64); break;
             case I_PFRSQIT1:            encoder::Opcode$< I_PFRSQIT1 >::Test(list, is64); break;
             case I_PFRSQRT:             encoder::Opcode$< I_PFRSQRT >::Test(list, is64); break;
-            case I_PFSUBR:              encoder::Opcode$< I_PFSUBR >::Test(list, is64); break;
             case I_PFSUB:               encoder::Opcode$< I_PFSUB >::Test(list, is64); break;
+            case I_PFSUBR:              encoder::Opcode$< I_PFSUBR >::Test(list, is64); break;
+            case I_PHADDD:              encoder::Opcode$< I_PHADDD >::Test(list, is64); break;
+            case I_PHADDSW:             encoder::Opcode$< I_PHADDSW >::Test(list, is64); break;
+            case I_PHADDW:              encoder::Opcode$< I_PHADDW >::Test(list, is64); break;
             case I_PHMINPOSUW:          encoder::Opcode$< I_PHMINPOSUW >::Test(list, is64); break;
+            case I_PHSUBD:              encoder::Opcode$< I_PHSUBD >::Test(list, is64); break;
+            case I_PHSUBSW:             encoder::Opcode$< I_PHSUBSW >::Test(list, is64); break;
+            case I_PHSUBW:              encoder::Opcode$< I_PHSUBW >::Test(list, is64); break;
             case I_PI2FD:               encoder::Opcode$< I_PI2FD >::Test(list, is64); break;
             case I_PI2FW:               encoder::Opcode$< I_PI2FW >::Test(list, is64); break;
             case I_PINSRB:              encoder::Opcode$< I_PINSRB >::Test(list, is64); break;
             case I_PINSRD:              encoder::Opcode$< I_PINSRD >::Test(list, is64); break;
             case I_PINSRQ:              encoder::Opcode$< I_PINSRQ >::Test(list, is64); break;
+            case I_PINSRW:              encoder::Opcode$< I_PINSRW >::Test(list, is64); break;
+            case I_PMADDUBSW:           encoder::Opcode$< I_PMADDUBSW >::Test(list, is64); break;
+            case I_PMADDWD:             encoder::Opcode$< I_PMADDWD >::Test(list, is64); break;
             case I_PMAXSB:              encoder::Opcode$< I_PMAXSB >::Test(list, is64); break;
             case I_PMAXSD:              encoder::Opcode$< I_PMAXSD >::Test(list, is64); break;
+            case I_PMAXSW:              encoder::Opcode$< I_PMAXSW >::Test(list, is64); break;
+            case I_PMAXUB:              encoder::Opcode$< I_PMAXUB >::Test(list, is64); break;
             case I_PMAXUD:              encoder::Opcode$< I_PMAXUD >::Test(list, is64); break;
             case I_PMAXUW:              encoder::Opcode$< I_PMAXUW >::Test(list, is64); break;
             case I_PMINSB:              encoder::Opcode$< I_PMINSB >::Test(list, is64); break;
             case I_PMINSD:              encoder::Opcode$< I_PMINSD >::Test(list, is64); break;
+            case I_PMINSW:              encoder::Opcode$< I_PMINSW >::Test(list, is64); break;
+            case I_PMINUB:              encoder::Opcode$< I_PMINUB >::Test(list, is64); break;
             case I_PMINUD:              encoder::Opcode$< I_PMINUD >::Test(list, is64); break;
             case I_PMINUW:              encoder::Opcode$< I_PMINUW >::Test(list, is64); break;
+            case I_PMOVMSKB:            encoder::Opcode$< I_PMOVMSKB >::Test(list, is64); break;
             case I_PMOVSXBD:            encoder::Opcode$< I_PMOVSXBD >::Test(list, is64); break;
             case I_PMOVSXBQ:            encoder::Opcode$< I_PMOVSXBQ >::Test(list, is64); break;
             case I_PMOVSXBW:            encoder::Opcode$< I_PMOVSXBW >::Test(list, is64); break;
@@ -3343,36 +2207,71 @@ namespace jitasm
             case I_PMOVZXWD:            encoder::Opcode$< I_PMOVZXWD >::Test(list, is64); break;
             case I_PMOVZXWQ:            encoder::Opcode$< I_PMOVZXWQ >::Test(list, is64); break;
             case I_PMULDQ:              encoder::Opcode$< I_PMULDQ >::Test(list, is64); break;
+            case I_PMULHRSW:            encoder::Opcode$< I_PMULHRSW >::Test(list, is64); break;
             case I_PMULHRW:             encoder::Opcode$< I_PMULHRW >::Test(list, is64); break;
+            case I_PMULHUW:             encoder::Opcode$< I_PMULHUW >::Test(list, is64); break;
+            case I_PMULHW:              encoder::Opcode$< I_PMULHW >::Test(list, is64); break;
             case I_PMULLD:              encoder::Opcode$< I_PMULLD >::Test(list, is64); break;
+            case I_PMULLW:              encoder::Opcode$< I_PMULLW >::Test(list, is64); break;
+            case I_PMULUDQ:             encoder::Opcode$< I_PMULUDQ >::Test(list, is64); break;
             case I_POP:                 encoder::Opcode$< I_POP >::Test(list, is64); break;
-            case I_POPAW:               encoder::Opcode$< I_POPAW >::Test(list, is64); break;
             case I_POPAL:               encoder::Opcode$< I_POPAL >::Test(list, is64); break;
+            case I_POPAW:               encoder::Opcode$< I_POPAW >::Test(list, is64); break;
             case I_POPCNT:              encoder::Opcode$< I_POPCNT >::Test(list, is64); break;
             case I_POPF:                encoder::Opcode$< I_POPF >::Test(list, is64); break;
             case I_POPFD:               encoder::Opcode$< I_POPFD >::Test(list, is64); break;
             case I_POPFQ:               encoder::Opcode$< I_POPFQ >::Test(list, is64); break;
+            case I_POR:                 encoder::Opcode$< I_POR >::Test(list, is64); break;
             case I_PREFETCH:            encoder::Opcode$< I_PREFETCH >::Test(list, is64); break;
             case I_PREFETCHNTA:         encoder::Opcode$< I_PREFETCHNTA >::Test(list, is64); break;
             case I_PREFETCHT0:          encoder::Opcode$< I_PREFETCHT0 >::Test(list, is64); break;
             case I_PREFETCHT1:          encoder::Opcode$< I_PREFETCHT1 >::Test(list, is64); break;
             case I_PREFETCHT2:          encoder::Opcode$< I_PREFETCHT2 >::Test(list, is64); break;
             case I_PREFETCHW:           encoder::Opcode$< I_PREFETCHW >::Test(list, is64); break;
+            case I_PSADBW:              encoder::Opcode$< I_PSADBW >::Test(list, is64); break;
+            case I_PSHUFB:              encoder::Opcode$< I_PSHUFB >::Test(list, is64); break;
             case I_PSHUFD:              encoder::Opcode$< I_PSHUFD >::Test(list, is64); break;
             case I_PSHUFHW:             encoder::Opcode$< I_PSHUFHW >::Test(list, is64); break;
             case I_PSHUFLW:             encoder::Opcode$< I_PSHUFLW >::Test(list, is64); break;
+            case I_PSHUFW:              encoder::Opcode$< I_PSHUFW >::Test(list, is64); break;
+            case I_PSIGNB:              encoder::Opcode$< I_PSIGNB >::Test(list, is64); break;
+            case I_PSIGND:              encoder::Opcode$< I_PSIGND >::Test(list, is64); break;
+            case I_PSIGNW:              encoder::Opcode$< I_PSIGNW >::Test(list, is64); break;
+            case I_PSLLD:               encoder::Opcode$< I_PSLLD >::Test(list, is64); break;
             case I_PSLLDQ:              encoder::Opcode$< I_PSLLDQ >::Test(list, is64); break;
+            case I_PSLLQ:               encoder::Opcode$< I_PSLLQ >::Test(list, is64); break;
+            case I_PSLLW:               encoder::Opcode$< I_PSLLW >::Test(list, is64); break;
+            case I_PSRAD:               encoder::Opcode$< I_PSRAD >::Test(list, is64); break;
+            case I_PSRAW:               encoder::Opcode$< I_PSRAW >::Test(list, is64); break;
+            case I_PSRLD:               encoder::Opcode$< I_PSRLD >::Test(list, is64); break;
             case I_PSRLDQ:              encoder::Opcode$< I_PSRLDQ >::Test(list, is64); break;
+            case I_PSRLQ:               encoder::Opcode$< I_PSRLQ >::Test(list, is64); break;
+            case I_PSRLW:               encoder::Opcode$< I_PSRLW >::Test(list, is64); break;
+            case I_PSUBB:               encoder::Opcode$< I_PSUBB >::Test(list, is64); break;
+            case I_PSUBD:               encoder::Opcode$< I_PSUBD >::Test(list, is64); break;
+            case I_PSUBQ:               encoder::Opcode$< I_PSUBQ >::Test(list, is64); break;
+            case I_PSUBSB:              encoder::Opcode$< I_PSUBSB >::Test(list, is64); break;
+            case I_PSUBSW:              encoder::Opcode$< I_PSUBSW >::Test(list, is64); break;
+            case I_PSUBUSB:             encoder::Opcode$< I_PSUBUSB >::Test(list, is64); break;
+            case I_PSUBUSW:             encoder::Opcode$< I_PSUBUSW >::Test(list, is64); break;
+            case I_PSUBW:               encoder::Opcode$< I_PSUBW >::Test(list, is64); break;
             case I_PSWAPD:              encoder::Opcode$< I_PSWAPD >::Test(list, is64); break;
             case I_PTEST:               encoder::Opcode$< I_PTEST >::Test(list, is64); break;
+            case I_PUNPCKHBW:           encoder::Opcode$< I_PUNPCKHBW >::Test(list, is64); break;
+            case I_PUNPCKHDQ:           encoder::Opcode$< I_PUNPCKHDQ >::Test(list, is64); break;
             case I_PUNPCKHQDQ:          encoder::Opcode$< I_PUNPCKHQDQ >::Test(list, is64); break;
+            case I_PUNPCKHWD:           encoder::Opcode$< I_PUNPCKHWD >::Test(list, is64); break;
+            case I_PUNPCKLBW:           encoder::Opcode$< I_PUNPCKLBW >::Test(list, is64); break;
+            case I_PUNPCKLDQ:           encoder::Opcode$< I_PUNPCKLDQ >::Test(list, is64); break;
             case I_PUNPCKLQDQ:          encoder::Opcode$< I_PUNPCKLQDQ >::Test(list, is64); break;
+            case I_PUNPCKLWD:           encoder::Opcode$< I_PUNPCKLWD >::Test(list, is64); break;
             case I_PUSH:                encoder::Opcode$< I_PUSH >::Test(list, is64); break;
-            case I_PUSHAW:              encoder::Opcode$< I_PUSHAW >::Test(list, is64); break;
             case I_PUSHAL:              encoder::Opcode$< I_PUSHAL >::Test(list, is64); break;
+            case I_PUSHAW:              encoder::Opcode$< I_PUSHAW >::Test(list, is64); break;
             case I_PUSHF:               encoder::Opcode$< I_PUSHF >::Test(list, is64); break;
             case I_PUSHFD:              encoder::Opcode$< I_PUSHFD >::Test(list, is64); break;
             case I_PUSHFQ:              encoder::Opcode$< I_PUSHFQ >::Test(list, is64); break;
+            case I_PXOR:                encoder::Opcode$< I_PXOR >::Test(list, is64); break;
             case I_RCL:                 encoder::Opcode$< I_RCL >::Test(list, is64); break;
             case I_RCPPS:               encoder::Opcode$< I_RCPPS >::Test(list, is64); break;
             case I_RCPSS:               encoder::Opcode$< I_RCPSS >::Test(list, is64); break;
@@ -3385,8 +2284,11 @@ namespace jitasm
             case I_RDSEED:              encoder::Opcode$< I_RDSEED >::Test(list, is64); break;
             case I_RDTSC:               encoder::Opcode$< I_RDTSC >::Test(list, is64); break;
             case I_RDTSCP:              encoder::Opcode$< I_RDTSCP >::Test(list, is64); break;
-            case I_REPNE:               encoder::Opcode$< I_REPNE >::Test(list, is64); break;
             case I_REP:                 encoder::Opcode$< I_REP >::Test(list, is64); break;
+            case I_REPNE:               encoder::Opcode$< I_REPNE >::Test(list, is64); break;
+            case I_RET:                 encoder::Opcode$< I_RET >::Test(list, is64); break;
+            case I_RETF:                encoder::Opcode$< I_RETF >::Test(list, is64); break;
+            case I_RETFQ:               encoder::Opcode$< I_RETFQ >::Test(list, is64); break;
             case I_ROL:                 encoder::Opcode$< I_ROL >::Test(list, is64); break;
             case I_ROR:                 encoder::Opcode$< I_ROR >::Test(list, is64); break;
             case I_RORX:                encoder::Opcode$< I_RORX >::Test(list, is64); break;
@@ -3423,7 +2325,6 @@ namespace jitasm
             case I_SHUFPD:              encoder::Opcode$< I_SHUFPD >::Test(list, is64); break;
             case I_SHUFPS:              encoder::Opcode$< I_SHUFPS >::Test(list, is64); break;
             case I_SIDT:                encoder::Opcode$< I_SIDT >::Test(list, is64); break;
-            case I_FSIN:                encoder::Opcode$< I_FSIN >::Test(list, is64); break;
             case I_SKINIT:              encoder::Opcode$< I_SKINIT >::Test(list, is64); break;
             case I_SLDT:                encoder::Opcode$< I_SLDT >::Test(list, is64); break;
             case I_SMSW:                encoder::Opcode$< I_SMSW >::Test(list, is64); break;
@@ -3431,7 +2332,6 @@ namespace jitasm
             case I_SQRTPS:              encoder::Opcode$< I_SQRTPS >::Test(list, is64); break;
             case I_SQRTSD:              encoder::Opcode$< I_SQRTSD >::Test(list, is64); break;
             case I_SQRTSS:              encoder::Opcode$< I_SQRTSS >::Test(list, is64); break;
-            case I_FSQRT:               encoder::Opcode$< I_FSQRT >::Test(list, is64); break;
             case I_STAC:                encoder::Opcode$< I_STAC >::Test(list, is64); break;
             case I_STC:                 encoder::Opcode$< I_STC >::Test(list, is64); break;
             case I_STD:                 encoder::Opcode$< I_STD >::Test(list, is64); break;
@@ -3440,19 +2340,11 @@ namespace jitasm
             case I_STMXCSR:             encoder::Opcode$< I_STMXCSR >::Test(list, is64); break;
             case I_STOS:                encoder::Opcode$< I_STOS >::Test(list, is64); break;
             case I_STR:                 encoder::Opcode$< I_STR >::Test(list, is64); break;
-            case I_FST:                 encoder::Opcode$< I_FST >::Test(list, is64); break;
-            case I_FSTP:                encoder::Opcode$< I_FSTP >::Test(list, is64); break;
-            case I_FSTPNCE:             encoder::Opcode$< I_FSTPNCE >::Test(list, is64); break;
+            case I_SUB:                 encoder::Opcode$< I_SUB >::Test(list, is64); break;
             case I_SUBPD:               encoder::Opcode$< I_SUBPD >::Test(list, is64); break;
             case I_SUBPS:               encoder::Opcode$< I_SUBPS >::Test(list, is64); break;
-            case I_FSUBR:               encoder::Opcode$< I_FSUBR >::Test(list, is64); break;
-            case I_FISUBR:              encoder::Opcode$< I_FISUBR >::Test(list, is64); break;
-            case I_FSUBRP:              encoder::Opcode$< I_FSUBRP >::Test(list, is64); break;
             case I_SUBSD:               encoder::Opcode$< I_SUBSD >::Test(list, is64); break;
             case I_SUBSS:               encoder::Opcode$< I_SUBSS >::Test(list, is64); break;
-            case I_FSUB:                encoder::Opcode$< I_FSUB >::Test(list, is64); break;
-            case I_FISUB:               encoder::Opcode$< I_FISUB >::Test(list, is64); break;
-            case I_FSUBP:               encoder::Opcode$< I_FSUBP >::Test(list, is64); break;
             case I_SWAPGS:              encoder::Opcode$< I_SWAPGS >::Test(list, is64); break;
             case I_SYSCALL:             encoder::Opcode$< I_SYSCALL >::Test(list, is64); break;
             case I_SYSENTER:            encoder::Opcode$< I_SYSENTER >::Test(list, is64); break;
@@ -3460,15 +2352,11 @@ namespace jitasm
             case I_SYSRET:              encoder::Opcode$< I_SYSRET >::Test(list, is64); break;
             case I_T1MSKC:              encoder::Opcode$< I_T1MSKC >::Test(list, is64); break;
             case I_TEST:                encoder::Opcode$< I_TEST >::Test(list, is64); break;
-            case I_UD2:                 encoder::Opcode$< I_UD2 >::Test(list, is64); break;
-            case I_FTST:                encoder::Opcode$< I_FTST >::Test(list, is64); break;
             case I_TZCNT:               encoder::Opcode$< I_TZCNT >::Test(list, is64); break;
             case I_TZMSK:               encoder::Opcode$< I_TZMSK >::Test(list, is64); break;
-            case I_FUCOMPI:             encoder::Opcode$< I_FUCOMPI >::Test(list, is64); break;
-            case I_FUCOMI:              encoder::Opcode$< I_FUCOMI >::Test(list, is64); break;
-            case I_FUCOMPP:             encoder::Opcode$< I_FUCOMPP >::Test(list, is64); break;
-            case I_FUCOMP:              encoder::Opcode$< I_FUCOMP >::Test(list, is64); break;
-            case I_FUCOM:               encoder::Opcode$< I_FUCOM >::Test(list, is64); break;
+            case I_UCOMISD:             encoder::Opcode$< I_UCOMISD >::Test(list, is64); break;
+            case I_UCOMISS:             encoder::Opcode$< I_UCOMISS >::Test(list, is64); break;
+            case I_UD2:                 encoder::Opcode$< I_UD2 >::Test(list, is64); break;
             case I_UD2B:                encoder::Opcode$< I_UD2B >::Test(list, is64); break;
             case I_UNPCKHPD:            encoder::Opcode$< I_UNPCKHPD >::Test(list, is64); break;
             case I_UNPCKHPS:            encoder::Opcode$< I_UNPCKHPS >::Test(list, is64); break;
@@ -3480,10 +2368,10 @@ namespace jitasm
             case I_VADDSS:              encoder::Opcode$< I_VADDSS >::Test(list, is64); break;
             case I_VADDSUBPD:           encoder::Opcode$< I_VADDSUBPD >::Test(list, is64); break;
             case I_VADDSUBPS:           encoder::Opcode$< I_VADDSUBPS >::Test(list, is64); break;
-            case I_VAESDECLAST:         encoder::Opcode$< I_VAESDECLAST >::Test(list, is64); break;
             case I_VAESDEC:             encoder::Opcode$< I_VAESDEC >::Test(list, is64); break;
-            case I_VAESENCLAST:         encoder::Opcode$< I_VAESENCLAST >::Test(list, is64); break;
+            case I_VAESDECLAST:         encoder::Opcode$< I_VAESDECLAST >::Test(list, is64); break;
             case I_VAESENC:             encoder::Opcode$< I_VAESENC >::Test(list, is64); break;
+            case I_VAESENCLAST:         encoder::Opcode$< I_VAESENCLAST >::Test(list, is64); break;
             case I_VAESIMC:             encoder::Opcode$< I_VAESIMC >::Test(list, is64); break;
             case I_VAESKEYGENASSIST:    encoder::Opcode$< I_VAESKEYGENASSIST >::Test(list, is64); break;
             case I_VALIGND:             encoder::Opcode$< I_VALIGND >::Test(list, is64); break;
@@ -3504,16 +2392,19 @@ namespace jitasm
             case I_VBROADCASTI64X4:     encoder::Opcode$< I_VBROADCASTI64X4 >::Test(list, is64); break;
             case I_VBROADCASTSD:        encoder::Opcode$< I_VBROADCASTSD >::Test(list, is64); break;
             case I_VBROADCASTSS:        encoder::Opcode$< I_VBROADCASTSS >::Test(list, is64); break;
+            case I_VCMP:                encoder::Opcode$< I_VCMP >::Test(list, is64); break;
             case I_VCMPPD:              encoder::Opcode$< I_VCMPPD >::Test(list, is64); break;
             case I_VCMPPS:              encoder::Opcode$< I_VCMPPS >::Test(list, is64); break;
             case I_VCMPSD:              encoder::Opcode$< I_VCMPSD >::Test(list, is64); break;
             case I_VCMPSS:              encoder::Opcode$< I_VCMPSS >::Test(list, is64); break;
+            case I_VCOMISD:             encoder::Opcode$< I_VCOMISD >::Test(list, is64); break;
+            case I_VCOMISS:             encoder::Opcode$< I_VCOMISS >::Test(list, is64); break;
             case I_VCVTDQ2PD:           encoder::Opcode$< I_VCVTDQ2PD >::Test(list, is64); break;
             case I_VCVTDQ2PS:           encoder::Opcode$< I_VCVTDQ2PS >::Test(list, is64); break;
-            case I_VCVTPD2DQX:          encoder::Opcode$< I_VCVTPD2DQX >::Test(list, is64); break;
             case I_VCVTPD2DQ:           encoder::Opcode$< I_VCVTPD2DQ >::Test(list, is64); break;
-            case I_VCVTPD2PSX:          encoder::Opcode$< I_VCVTPD2PSX >::Test(list, is64); break;
+            case I_VCVTPD2DQX:          encoder::Opcode$< I_VCVTPD2DQX >::Test(list, is64); break;
             case I_VCVTPD2PS:           encoder::Opcode$< I_VCVTPD2PS >::Test(list, is64); break;
+            case I_VCVTPD2PSX:          encoder::Opcode$< I_VCVTPD2PSX >::Test(list, is64); break;
             case I_VCVTPD2UDQ:          encoder::Opcode$< I_VCVTPD2UDQ >::Test(list, is64); break;
             case I_VCVTPH2PS:           encoder::Opcode$< I_VCVTPH2PS >::Test(list, is64); break;
             case I_VCVTPS2DQ:           encoder::Opcode$< I_VCVTPS2DQ >::Test(list, is64); break;
@@ -3521,16 +2412,26 @@ namespace jitasm
             case I_VCVTPS2PH:           encoder::Opcode$< I_VCVTPS2PH >::Test(list, is64); break;
             case I_VCVTPS2UDQ:          encoder::Opcode$< I_VCVTPS2UDQ >::Test(list, is64); break;
             case I_VCVTSD2SI:           encoder::Opcode$< I_VCVTSD2SI >::Test(list, is64); break;
+            case I_VCVTSD2SS:           encoder::Opcode$< I_VCVTSD2SS >::Test(list, is64); break;
             case I_VCVTSD2USI:          encoder::Opcode$< I_VCVTSD2USI >::Test(list, is64); break;
+            case I_VCVTSI2SD:           encoder::Opcode$< I_VCVTSI2SD >::Test(list, is64); break;
+            case I_VCVTSI2SS:           encoder::Opcode$< I_VCVTSI2SS >::Test(list, is64); break;
+            case I_VCVTSS2SD:           encoder::Opcode$< I_VCVTSS2SD >::Test(list, is64); break;
             case I_VCVTSS2SI:           encoder::Opcode$< I_VCVTSS2SI >::Test(list, is64); break;
             case I_VCVTSS2USI:          encoder::Opcode$< I_VCVTSS2USI >::Test(list, is64); break;
-            case I_VCVTTPD2DQX:         encoder::Opcode$< I_VCVTTPD2DQX >::Test(list, is64); break;
             case I_VCVTTPD2DQ:          encoder::Opcode$< I_VCVTTPD2DQ >::Test(list, is64); break;
+            case I_VCVTTPD2DQX:         encoder::Opcode$< I_VCVTTPD2DQX >::Test(list, is64); break;
             case I_VCVTTPD2UDQ:         encoder::Opcode$< I_VCVTTPD2UDQ >::Test(list, is64); break;
             case I_VCVTTPS2DQ:          encoder::Opcode$< I_VCVTTPS2DQ >::Test(list, is64); break;
             case I_VCVTTPS2UDQ:         encoder::Opcode$< I_VCVTTPS2UDQ >::Test(list, is64); break;
+            case I_VCVTTSD2SI:          encoder::Opcode$< I_VCVTTSD2SI >::Test(list, is64); break;
+            case I_VCVTTSD2USI:         encoder::Opcode$< I_VCVTTSD2USI >::Test(list, is64); break;
+            case I_VCVTTSS2SI:          encoder::Opcode$< I_VCVTTSS2SI >::Test(list, is64); break;
+            case I_VCVTTSS2USI:         encoder::Opcode$< I_VCVTTSS2USI >::Test(list, is64); break;
             case I_VCVTUDQ2PD:          encoder::Opcode$< I_VCVTUDQ2PD >::Test(list, is64); break;
             case I_VCVTUDQ2PS:          encoder::Opcode$< I_VCVTUDQ2PS >::Test(list, is64); break;
+            case I_VCVTUSI2SD:          encoder::Opcode$< I_VCVTUSI2SD >::Test(list, is64); break;
+            case I_VCVTUSI2SS:          encoder::Opcode$< I_VCVTUSI2SS >::Test(list, is64); break;
             case I_VDIVPD:              encoder::Opcode$< I_VDIVPD >::Test(list, is64); break;
             case I_VDIVPS:              encoder::Opcode$< I_VDIVPS >::Test(list, is64); break;
             case I_VDIVSD:              encoder::Opcode$< I_VDIVSD >::Test(list, is64); break;
@@ -3548,92 +2449,88 @@ namespace jitasm
             case I_VEXTRACTPS:          encoder::Opcode$< I_VEXTRACTPS >::Test(list, is64); break;
             case I_VFMADD132PD:         encoder::Opcode$< I_VFMADD132PD >::Test(list, is64); break;
             case I_VFMADD132PS:         encoder::Opcode$< I_VFMADD132PS >::Test(list, is64); break;
+            case I_VFMADD132SD:         encoder::Opcode$< I_VFMADD132SD >::Test(list, is64); break;
+            case I_VFMADD132SS:         encoder::Opcode$< I_VFMADD132SS >::Test(list, is64); break;
             case I_VFMADD213PD:         encoder::Opcode$< I_VFMADD213PD >::Test(list, is64); break;
             case I_VFMADD213PS:         encoder::Opcode$< I_VFMADD213PS >::Test(list, is64); break;
-            case I_VFMADDPD:            encoder::Opcode$< I_VFMADDPD >::Test(list, is64); break;
-            case I_VFMADD231PD:         encoder::Opcode$< I_VFMADD231PD >::Test(list, is64); break;
-            case I_VFMADDPS:            encoder::Opcode$< I_VFMADDPS >::Test(list, is64); break;
-            case I_VFMADD231PS:         encoder::Opcode$< I_VFMADD231PS >::Test(list, is64); break;
-            case I_VFMADDSD:            encoder::Opcode$< I_VFMADDSD >::Test(list, is64); break;
             case I_VFMADD213SD:         encoder::Opcode$< I_VFMADD213SD >::Test(list, is64); break;
-            case I_VFMADD132SD:         encoder::Opcode$< I_VFMADD132SD >::Test(list, is64); break;
-            case I_VFMADD231SD:         encoder::Opcode$< I_VFMADD231SD >::Test(list, is64); break;
-            case I_VFMADDSS:            encoder::Opcode$< I_VFMADDSS >::Test(list, is64); break;
             case I_VFMADD213SS:         encoder::Opcode$< I_VFMADD213SS >::Test(list, is64); break;
-            case I_VFMADD132SS:         encoder::Opcode$< I_VFMADD132SS >::Test(list, is64); break;
+            case I_VFMADD231PD:         encoder::Opcode$< I_VFMADD231PD >::Test(list, is64); break;
+            case I_VFMADD231PS:         encoder::Opcode$< I_VFMADD231PS >::Test(list, is64); break;
+            case I_VFMADD231SD:         encoder::Opcode$< I_VFMADD231SD >::Test(list, is64); break;
             case I_VFMADD231SS:         encoder::Opcode$< I_VFMADD231SS >::Test(list, is64); break;
+            case I_VFMADDPD:            encoder::Opcode$< I_VFMADDPD >::Test(list, is64); break;
+            case I_VFMADDPS:            encoder::Opcode$< I_VFMADDPS >::Test(list, is64); break;
+            case I_VFMADDSD:            encoder::Opcode$< I_VFMADDSD >::Test(list, is64); break;
+            case I_VFMADDSS:            encoder::Opcode$< I_VFMADDSS >::Test(list, is64); break;
             case I_VFMADDSUB132PD:      encoder::Opcode$< I_VFMADDSUB132PD >::Test(list, is64); break;
             case I_VFMADDSUB132PS:      encoder::Opcode$< I_VFMADDSUB132PS >::Test(list, is64); break;
             case I_VFMADDSUB213PD:      encoder::Opcode$< I_VFMADDSUB213PD >::Test(list, is64); break;
             case I_VFMADDSUB213PS:      encoder::Opcode$< I_VFMADDSUB213PS >::Test(list, is64); break;
-            case I_VFMADDSUBPD:         encoder::Opcode$< I_VFMADDSUBPD >::Test(list, is64); break;
             case I_VFMADDSUB231PD:      encoder::Opcode$< I_VFMADDSUB231PD >::Test(list, is64); break;
-            case I_VFMADDSUBPS:         encoder::Opcode$< I_VFMADDSUBPS >::Test(list, is64); break;
             case I_VFMADDSUB231PS:      encoder::Opcode$< I_VFMADDSUB231PS >::Test(list, is64); break;
+            case I_VFMADDSUBPD:         encoder::Opcode$< I_VFMADDSUBPD >::Test(list, is64); break;
+            case I_VFMADDSUBPS:         encoder::Opcode$< I_VFMADDSUBPS >::Test(list, is64); break;
             case I_VFMSUB132PD:         encoder::Opcode$< I_VFMSUB132PD >::Test(list, is64); break;
             case I_VFMSUB132PS:         encoder::Opcode$< I_VFMSUB132PS >::Test(list, is64); break;
+            case I_VFMSUB132SD:         encoder::Opcode$< I_VFMSUB132SD >::Test(list, is64); break;
+            case I_VFMSUB132SS:         encoder::Opcode$< I_VFMSUB132SS >::Test(list, is64); break;
             case I_VFMSUB213PD:         encoder::Opcode$< I_VFMSUB213PD >::Test(list, is64); break;
             case I_VFMSUB213PS:         encoder::Opcode$< I_VFMSUB213PS >::Test(list, is64); break;
+            case I_VFMSUB213SD:         encoder::Opcode$< I_VFMSUB213SD >::Test(list, is64); break;
+            case I_VFMSUB213SS:         encoder::Opcode$< I_VFMSUB213SS >::Test(list, is64); break;
+            case I_VFMSUB231PD:         encoder::Opcode$< I_VFMSUB231PD >::Test(list, is64); break;
+            case I_VFMSUB231PS:         encoder::Opcode$< I_VFMSUB231PS >::Test(list, is64); break;
+            case I_VFMSUB231SD:         encoder::Opcode$< I_VFMSUB231SD >::Test(list, is64); break;
+            case I_VFMSUB231SS:         encoder::Opcode$< I_VFMSUB231SS >::Test(list, is64); break;
             case I_VFMSUBADD132PD:      encoder::Opcode$< I_VFMSUBADD132PD >::Test(list, is64); break;
             case I_VFMSUBADD132PS:      encoder::Opcode$< I_VFMSUBADD132PS >::Test(list, is64); break;
             case I_VFMSUBADD213PD:      encoder::Opcode$< I_VFMSUBADD213PD >::Test(list, is64); break;
             case I_VFMSUBADD213PS:      encoder::Opcode$< I_VFMSUBADD213PS >::Test(list, is64); break;
-            case I_VFMSUBADDPD:         encoder::Opcode$< I_VFMSUBADDPD >::Test(list, is64); break;
             case I_VFMSUBADD231PD:      encoder::Opcode$< I_VFMSUBADD231PD >::Test(list, is64); break;
-            case I_VFMSUBADDPS:         encoder::Opcode$< I_VFMSUBADDPS >::Test(list, is64); break;
             case I_VFMSUBADD231PS:      encoder::Opcode$< I_VFMSUBADD231PS >::Test(list, is64); break;
+            case I_VFMSUBADDPD:         encoder::Opcode$< I_VFMSUBADDPD >::Test(list, is64); break;
+            case I_VFMSUBADDPS:         encoder::Opcode$< I_VFMSUBADDPS >::Test(list, is64); break;
             case I_VFMSUBPD:            encoder::Opcode$< I_VFMSUBPD >::Test(list, is64); break;
-            case I_VFMSUB231PD:         encoder::Opcode$< I_VFMSUB231PD >::Test(list, is64); break;
             case I_VFMSUBPS:            encoder::Opcode$< I_VFMSUBPS >::Test(list, is64); break;
-            case I_VFMSUB231PS:         encoder::Opcode$< I_VFMSUB231PS >::Test(list, is64); break;
             case I_VFMSUBSD:            encoder::Opcode$< I_VFMSUBSD >::Test(list, is64); break;
-            case I_VFMSUB213SD:         encoder::Opcode$< I_VFMSUB213SD >::Test(list, is64); break;
-            case I_VFMSUB132SD:         encoder::Opcode$< I_VFMSUB132SD >::Test(list, is64); break;
-            case I_VFMSUB231SD:         encoder::Opcode$< I_VFMSUB231SD >::Test(list, is64); break;
             case I_VFMSUBSS:            encoder::Opcode$< I_VFMSUBSS >::Test(list, is64); break;
-            case I_VFMSUB213SS:         encoder::Opcode$< I_VFMSUB213SS >::Test(list, is64); break;
-            case I_VFMSUB132SS:         encoder::Opcode$< I_VFMSUB132SS >::Test(list, is64); break;
-            case I_VFMSUB231SS:         encoder::Opcode$< I_VFMSUB231SS >::Test(list, is64); break;
             case I_VFNMADD132PD:        encoder::Opcode$< I_VFNMADD132PD >::Test(list, is64); break;
             case I_VFNMADD132PS:        encoder::Opcode$< I_VFNMADD132PS >::Test(list, is64); break;
+            case I_VFNMADD132SD:        encoder::Opcode$< I_VFNMADD132SD >::Test(list, is64); break;
+            case I_VFNMADD132SS:        encoder::Opcode$< I_VFNMADD132SS >::Test(list, is64); break;
             case I_VFNMADD213PD:        encoder::Opcode$< I_VFNMADD213PD >::Test(list, is64); break;
             case I_VFNMADD213PS:        encoder::Opcode$< I_VFNMADD213PS >::Test(list, is64); break;
-            case I_VFNMADDPD:           encoder::Opcode$< I_VFNMADDPD >::Test(list, is64); break;
-            case I_VFNMADD231PD:        encoder::Opcode$< I_VFNMADD231PD >::Test(list, is64); break;
-            case I_VFNMADDPS:           encoder::Opcode$< I_VFNMADDPS >::Test(list, is64); break;
-            case I_VFNMADD231PS:        encoder::Opcode$< I_VFNMADD231PS >::Test(list, is64); break;
-            case I_VFNMADDSD:           encoder::Opcode$< I_VFNMADDSD >::Test(list, is64); break;
             case I_VFNMADD213SD:        encoder::Opcode$< I_VFNMADD213SD >::Test(list, is64); break;
-            case I_VFNMADD132SD:        encoder::Opcode$< I_VFNMADD132SD >::Test(list, is64); break;
-            case I_VFNMADD231SD:        encoder::Opcode$< I_VFNMADD231SD >::Test(list, is64); break;
-            case I_VFNMADDSS:           encoder::Opcode$< I_VFNMADDSS >::Test(list, is64); break;
             case I_VFNMADD213SS:        encoder::Opcode$< I_VFNMADD213SS >::Test(list, is64); break;
-            case I_VFNMADD132SS:        encoder::Opcode$< I_VFNMADD132SS >::Test(list, is64); break;
+            case I_VFNMADD231PD:        encoder::Opcode$< I_VFNMADD231PD >::Test(list, is64); break;
+            case I_VFNMADD231PS:        encoder::Opcode$< I_VFNMADD231PS >::Test(list, is64); break;
+            case I_VFNMADD231SD:        encoder::Opcode$< I_VFNMADD231SD >::Test(list, is64); break;
             case I_VFNMADD231SS:        encoder::Opcode$< I_VFNMADD231SS >::Test(list, is64); break;
+            case I_VFNMADDPD:           encoder::Opcode$< I_VFNMADDPD >::Test(list, is64); break;
+            case I_VFNMADDPS:           encoder::Opcode$< I_VFNMADDPS >::Test(list, is64); break;
+            case I_VFNMADDSD:           encoder::Opcode$< I_VFNMADDSD >::Test(list, is64); break;
+            case I_VFNMADDSS:           encoder::Opcode$< I_VFNMADDSS >::Test(list, is64); break;
             case I_VFNMSUB132PD:        encoder::Opcode$< I_VFNMSUB132PD >::Test(list, is64); break;
             case I_VFNMSUB132PS:        encoder::Opcode$< I_VFNMSUB132PS >::Test(list, is64); break;
+            case I_VFNMSUB132SD:        encoder::Opcode$< I_VFNMSUB132SD >::Test(list, is64); break;
+            case I_VFNMSUB132SS:        encoder::Opcode$< I_VFNMSUB132SS >::Test(list, is64); break;
             case I_VFNMSUB213PD:        encoder::Opcode$< I_VFNMSUB213PD >::Test(list, is64); break;
             case I_VFNMSUB213PS:        encoder::Opcode$< I_VFNMSUB213PS >::Test(list, is64); break;
-            case I_VFNMSUBPD:           encoder::Opcode$< I_VFNMSUBPD >::Test(list, is64); break;
-            case I_VFNMSUB231PD:        encoder::Opcode$< I_VFNMSUB231PD >::Test(list, is64); break;
-            case I_VFNMSUBPS:           encoder::Opcode$< I_VFNMSUBPS >::Test(list, is64); break;
-            case I_VFNMSUB231PS:        encoder::Opcode$< I_VFNMSUB231PS >::Test(list, is64); break;
-            case I_VFNMSUBSD:           encoder::Opcode$< I_VFNMSUBSD >::Test(list, is64); break;
             case I_VFNMSUB213SD:        encoder::Opcode$< I_VFNMSUB213SD >::Test(list, is64); break;
-            case I_VFNMSUB132SD:        encoder::Opcode$< I_VFNMSUB132SD >::Test(list, is64); break;
-            case I_VFNMSUB231SD:        encoder::Opcode$< I_VFNMSUB231SD >::Test(list, is64); break;
-            case I_VFNMSUBSS:           encoder::Opcode$< I_VFNMSUBSS >::Test(list, is64); break;
             case I_VFNMSUB213SS:        encoder::Opcode$< I_VFNMSUB213SS >::Test(list, is64); break;
-            case I_VFNMSUB132SS:        encoder::Opcode$< I_VFNMSUB132SS >::Test(list, is64); break;
+            case I_VFNMSUB231PD:        encoder::Opcode$< I_VFNMSUB231PD >::Test(list, is64); break;
+            case I_VFNMSUB231PS:        encoder::Opcode$< I_VFNMSUB231PS >::Test(list, is64); break;
+            case I_VFNMSUB231SD:        encoder::Opcode$< I_VFNMSUB231SD >::Test(list, is64); break;
             case I_VFNMSUB231SS:        encoder::Opcode$< I_VFNMSUB231SS >::Test(list, is64); break;
+            case I_VFNMSUBPD:           encoder::Opcode$< I_VFNMSUBPD >::Test(list, is64); break;
+            case I_VFNMSUBPS:           encoder::Opcode$< I_VFNMSUBPS >::Test(list, is64); break;
+            case I_VFNMSUBSD:           encoder::Opcode$< I_VFNMSUBSD >::Test(list, is64); break;
+            case I_VFNMSUBSS:           encoder::Opcode$< I_VFNMSUBSS >::Test(list, is64); break;
             case I_VFRCZPD:             encoder::Opcode$< I_VFRCZPD >::Test(list, is64); break;
             case I_VFRCZPS:             encoder::Opcode$< I_VFRCZPS >::Test(list, is64); break;
             case I_VFRCZSD:             encoder::Opcode$< I_VFRCZSD >::Test(list, is64); break;
             case I_VFRCZSS:             encoder::Opcode$< I_VFRCZSS >::Test(list, is64); break;
-            case I_VORPD:               encoder::Opcode$< I_VORPD >::Test(list, is64); break;
-            case I_VORPS:               encoder::Opcode$< I_VORPS >::Test(list, is64); break;
-            case I_VXORPD:              encoder::Opcode$< I_VXORPD >::Test(list, is64); break;
-            case I_VXORPS:              encoder::Opcode$< I_VXORPS >::Test(list, is64); break;
             case I_VGATHERDPD:          encoder::Opcode$< I_VGATHERDPD >::Test(list, is64); break;
             case I_VGATHERDPS:          encoder::Opcode$< I_VGATHERDPS >::Test(list, is64); break;
             case I_VGATHERPF0DPD:       encoder::Opcode$< I_VGATHERPF0DPD >::Test(list, is64); break;
@@ -3676,17 +2573,18 @@ namespace jitasm
             case I_VMLAUNCH:            encoder::Opcode$< I_VMLAUNCH >::Test(list, is64); break;
             case I_VMLOAD:              encoder::Opcode$< I_VMLOAD >::Test(list, is64); break;
             case I_VMMCALL:             encoder::Opcode$< I_VMMCALL >::Test(list, is64); break;
-            case I_VMOVQ:               encoder::Opcode$< I_VMOVQ >::Test(list, is64); break;
-            case I_VMOVDDUP:            encoder::Opcode$< I_VMOVDDUP >::Test(list, is64); break;
+            case I_VMOVAPD:             encoder::Opcode$< I_VMOVAPD >::Test(list, is64); break;
+            case I_VMOVAPS:             encoder::Opcode$< I_VMOVAPS >::Test(list, is64); break;
             case I_VMOVD:               encoder::Opcode$< I_VMOVD >::Test(list, is64); break;
+            case I_VMOVDDUP:            encoder::Opcode$< I_VMOVDDUP >::Test(list, is64); break;
+            case I_VMOVDQA:             encoder::Opcode$< I_VMOVDQA >::Test(list, is64); break;
             case I_VMOVDQA32:           encoder::Opcode$< I_VMOVDQA32 >::Test(list, is64); break;
             case I_VMOVDQA64:           encoder::Opcode$< I_VMOVDQA64 >::Test(list, is64); break;
-            case I_VMOVDQA:             encoder::Opcode$< I_VMOVDQA >::Test(list, is64); break;
+            case I_VMOVDQU:             encoder::Opcode$< I_VMOVDQU >::Test(list, is64); break;
             case I_VMOVDQU16:           encoder::Opcode$< I_VMOVDQU16 >::Test(list, is64); break;
             case I_VMOVDQU32:           encoder::Opcode$< I_VMOVDQU32 >::Test(list, is64); break;
             case I_VMOVDQU64:           encoder::Opcode$< I_VMOVDQU64 >::Test(list, is64); break;
             case I_VMOVDQU8:            encoder::Opcode$< I_VMOVDQU8 >::Test(list, is64); break;
-            case I_VMOVDQU:             encoder::Opcode$< I_VMOVDQU >::Test(list, is64); break;
             case I_VMOVHLPS:            encoder::Opcode$< I_VMOVHLPS >::Test(list, is64); break;
             case I_VMOVHPD:             encoder::Opcode$< I_VMOVHPD >::Test(list, is64); break;
             case I_VMOVHPS:             encoder::Opcode$< I_VMOVHPS >::Test(list, is64); break;
@@ -3695,10 +2593,11 @@ namespace jitasm
             case I_VMOVLPS:             encoder::Opcode$< I_VMOVLPS >::Test(list, is64); break;
             case I_VMOVMSKPD:           encoder::Opcode$< I_VMOVMSKPD >::Test(list, is64); break;
             case I_VMOVMSKPS:           encoder::Opcode$< I_VMOVMSKPS >::Test(list, is64); break;
-            case I_VMOVNTDQA:           encoder::Opcode$< I_VMOVNTDQA >::Test(list, is64); break;
             case I_VMOVNTDQ:            encoder::Opcode$< I_VMOVNTDQ >::Test(list, is64); break;
+            case I_VMOVNTDQA:           encoder::Opcode$< I_VMOVNTDQA >::Test(list, is64); break;
             case I_VMOVNTPD:            encoder::Opcode$< I_VMOVNTPD >::Test(list, is64); break;
             case I_VMOVNTPS:            encoder::Opcode$< I_VMOVNTPS >::Test(list, is64); break;
+            case I_VMOVQ:               encoder::Opcode$< I_VMOVQ >::Test(list, is64); break;
             case I_VMOVSD:              encoder::Opcode$< I_VMOVSD >::Test(list, is64); break;
             case I_VMOVSHDUP:           encoder::Opcode$< I_VMOVSHDUP >::Test(list, is64); break;
             case I_VMOVSLDUP:           encoder::Opcode$< I_VMOVSLDUP >::Test(list, is64); break;
@@ -3719,6 +2618,8 @@ namespace jitasm
             case I_VMWRITE:             encoder::Opcode$< I_VMWRITE >::Test(list, is64); break;
             case I_VMXOFF:              encoder::Opcode$< I_VMXOFF >::Test(list, is64); break;
             case I_VMXON:               encoder::Opcode$< I_VMXON >::Test(list, is64); break;
+            case I_VORPD:               encoder::Opcode$< I_VORPD >::Test(list, is64); break;
+            case I_VORPS:               encoder::Opcode$< I_VORPS >::Test(list, is64); break;
             case I_VPABSB:              encoder::Opcode$< I_VPABSB >::Test(list, is64); break;
             case I_VPABSD:              encoder::Opcode$< I_VPABSD >::Test(list, is64); break;
             case I_VPABSQ:              encoder::Opcode$< I_VPABSQ >::Test(list, is64); break;
@@ -3736,12 +2637,12 @@ namespace jitasm
             case I_VPADDUSW:            encoder::Opcode$< I_VPADDUSW >::Test(list, is64); break;
             case I_VPADDW:              encoder::Opcode$< I_VPADDW >::Test(list, is64); break;
             case I_VPALIGNR:            encoder::Opcode$< I_VPALIGNR >::Test(list, is64); break;
+            case I_VPAND:               encoder::Opcode$< I_VPAND >::Test(list, is64); break;
             case I_VPANDD:              encoder::Opcode$< I_VPANDD >::Test(list, is64); break;
+            case I_VPANDN:              encoder::Opcode$< I_VPANDN >::Test(list, is64); break;
             case I_VPANDND:             encoder::Opcode$< I_VPANDND >::Test(list, is64); break;
             case I_VPANDNQ:             encoder::Opcode$< I_VPANDNQ >::Test(list, is64); break;
-            case I_VPANDN:              encoder::Opcode$< I_VPANDN >::Test(list, is64); break;
             case I_VPANDQ:              encoder::Opcode$< I_VPANDQ >::Test(list, is64); break;
-            case I_VPAND:               encoder::Opcode$< I_VPAND >::Test(list, is64); break;
             case I_VPAVGB:              encoder::Opcode$< I_VPAVGB >::Test(list, is64); break;
             case I_VPAVGW:              encoder::Opcode$< I_VPAVGW >::Test(list, is64); break;
             case I_VPBLENDD:            encoder::Opcode$< I_VPBLENDD >::Test(list, is64); break;
@@ -3813,8 +2714,8 @@ namespace jitasm
             case I_VPHADDBD:            encoder::Opcode$< I_VPHADDBD >::Test(list, is64); break;
             case I_VPHADDBQ:            encoder::Opcode$< I_VPHADDBQ >::Test(list, is64); break;
             case I_VPHADDBW:            encoder::Opcode$< I_VPHADDBW >::Test(list, is64); break;
-            case I_VPHADDDQ:            encoder::Opcode$< I_VPHADDDQ >::Test(list, is64); break;
             case I_VPHADDD:             encoder::Opcode$< I_VPHADDD >::Test(list, is64); break;
+            case I_VPHADDDQ:            encoder::Opcode$< I_VPHADDDQ >::Test(list, is64); break;
             case I_VPHADDSW:            encoder::Opcode$< I_VPHADDSW >::Test(list, is64); break;
             case I_VPHADDUBD:           encoder::Opcode$< I_VPHADDUBD >::Test(list, is64); break;
             case I_VPHADDUBQ:           encoder::Opcode$< I_VPHADDUBQ >::Test(list, is64); break;
@@ -3822,16 +2723,16 @@ namespace jitasm
             case I_VPHADDUDQ:           encoder::Opcode$< I_VPHADDUDQ >::Test(list, is64); break;
             case I_VPHADDUWD:           encoder::Opcode$< I_VPHADDUWD >::Test(list, is64); break;
             case I_VPHADDUWQ:           encoder::Opcode$< I_VPHADDUWQ >::Test(list, is64); break;
+            case I_VPHADDW:             encoder::Opcode$< I_VPHADDW >::Test(list, is64); break;
             case I_VPHADDWD:            encoder::Opcode$< I_VPHADDWD >::Test(list, is64); break;
             case I_VPHADDWQ:            encoder::Opcode$< I_VPHADDWQ >::Test(list, is64); break;
-            case I_VPHADDW:             encoder::Opcode$< I_VPHADDW >::Test(list, is64); break;
             case I_VPHMINPOSUW:         encoder::Opcode$< I_VPHMINPOSUW >::Test(list, is64); break;
             case I_VPHSUBBW:            encoder::Opcode$< I_VPHSUBBW >::Test(list, is64); break;
-            case I_VPHSUBDQ:            encoder::Opcode$< I_VPHSUBDQ >::Test(list, is64); break;
             case I_VPHSUBD:             encoder::Opcode$< I_VPHSUBD >::Test(list, is64); break;
+            case I_VPHSUBDQ:            encoder::Opcode$< I_VPHSUBDQ >::Test(list, is64); break;
             case I_VPHSUBSW:            encoder::Opcode$< I_VPHSUBSW >::Test(list, is64); break;
-            case I_VPHSUBWD:            encoder::Opcode$< I_VPHSUBWD >::Test(list, is64); break;
             case I_VPHSUBW:             encoder::Opcode$< I_VPHSUBW >::Test(list, is64); break;
+            case I_VPHSUBWD:            encoder::Opcode$< I_VPHSUBWD >::Test(list, is64); break;
             case I_VPINSRB:             encoder::Opcode$< I_VPINSRB >::Test(list, is64); break;
             case I_VPINSRD:             encoder::Opcode$< I_VPINSRD >::Test(list, is64); break;
             case I_VPINSRQ:             encoder::Opcode$< I_VPINSRQ >::Test(list, is64); break;
@@ -3905,9 +2806,9 @@ namespace jitasm
             case I_VPMULLD:             encoder::Opcode$< I_VPMULLD >::Test(list, is64); break;
             case I_VPMULLW:             encoder::Opcode$< I_VPMULLW >::Test(list, is64); break;
             case I_VPMULUDQ:            encoder::Opcode$< I_VPMULUDQ >::Test(list, is64); break;
+            case I_VPOR:                encoder::Opcode$< I_VPOR >::Test(list, is64); break;
             case I_VPORD:               encoder::Opcode$< I_VPORD >::Test(list, is64); break;
             case I_VPORQ:               encoder::Opcode$< I_VPORQ >::Test(list, is64); break;
-            case I_VPOR:                encoder::Opcode$< I_VPOR >::Test(list, is64); break;
             case I_VPPERM:              encoder::Opcode$< I_VPPERM >::Test(list, is64); break;
             case I_VPROTB:              encoder::Opcode$< I_VPROTB >::Test(list, is64); break;
             case I_VPROTD:              encoder::Opcode$< I_VPROTD >::Test(list, is64); break;
@@ -3933,8 +2834,8 @@ namespace jitasm
             case I_VPSIGNB:             encoder::Opcode$< I_VPSIGNB >::Test(list, is64); break;
             case I_VPSIGND:             encoder::Opcode$< I_VPSIGND >::Test(list, is64); break;
             case I_VPSIGNW:             encoder::Opcode$< I_VPSIGNW >::Test(list, is64); break;
-            case I_VPSLLDQ:             encoder::Opcode$< I_VPSLLDQ >::Test(list, is64); break;
             case I_VPSLLD:              encoder::Opcode$< I_VPSLLD >::Test(list, is64); break;
+            case I_VPSLLDQ:             encoder::Opcode$< I_VPSLLDQ >::Test(list, is64); break;
             case I_VPSLLQ:              encoder::Opcode$< I_VPSLLQ >::Test(list, is64); break;
             case I_VPSLLVD:             encoder::Opcode$< I_VPSLLVD >::Test(list, is64); break;
             case I_VPSLLVQ:             encoder::Opcode$< I_VPSLLVQ >::Test(list, is64); break;
@@ -3944,8 +2845,8 @@ namespace jitasm
             case I_VPSRAVD:             encoder::Opcode$< I_VPSRAVD >::Test(list, is64); break;
             case I_VPSRAVQ:             encoder::Opcode$< I_VPSRAVQ >::Test(list, is64); break;
             case I_VPSRAW:              encoder::Opcode$< I_VPSRAW >::Test(list, is64); break;
-            case I_VPSRLDQ:             encoder::Opcode$< I_VPSRLDQ >::Test(list, is64); break;
             case I_VPSRLD:              encoder::Opcode$< I_VPSRLD >::Test(list, is64); break;
+            case I_VPSRLDQ:             encoder::Opcode$< I_VPSRLDQ >::Test(list, is64); break;
             case I_VPSRLQ:              encoder::Opcode$< I_VPSRLQ >::Test(list, is64); break;
             case I_VPSRLVD:             encoder::Opcode$< I_VPSRLVD >::Test(list, is64); break;
             case I_VPSRLVQ:             encoder::Opcode$< I_VPSRLVQ >::Test(list, is64); break;
@@ -3958,11 +2859,11 @@ namespace jitasm
             case I_VPSUBUSB:            encoder::Opcode$< I_VPSUBUSB >::Test(list, is64); break;
             case I_VPSUBUSW:            encoder::Opcode$< I_VPSUBUSW >::Test(list, is64); break;
             case I_VPSUBW:              encoder::Opcode$< I_VPSUBW >::Test(list, is64); break;
+            case I_VPTEST:              encoder::Opcode$< I_VPTEST >::Test(list, is64); break;
             case I_VPTESTMD:            encoder::Opcode$< I_VPTESTMD >::Test(list, is64); break;
             case I_VPTESTMQ:            encoder::Opcode$< I_VPTESTMQ >::Test(list, is64); break;
             case I_VPTESTNMD:           encoder::Opcode$< I_VPTESTNMD >::Test(list, is64); break;
             case I_VPTESTNMQ:           encoder::Opcode$< I_VPTESTNMQ >::Test(list, is64); break;
-            case I_VPTEST:              encoder::Opcode$< I_VPTEST >::Test(list, is64); break;
             case I_VPUNPCKHBW:          encoder::Opcode$< I_VPUNPCKHBW >::Test(list, is64); break;
             case I_VPUNPCKHDQ:          encoder::Opcode$< I_VPUNPCKHDQ >::Test(list, is64); break;
             case I_VPUNPCKHQDQ:         encoder::Opcode$< I_VPUNPCKHQDQ >::Test(list, is64); break;
@@ -3971,9 +2872,9 @@ namespace jitasm
             case I_VPUNPCKLDQ:          encoder::Opcode$< I_VPUNPCKLDQ >::Test(list, is64); break;
             case I_VPUNPCKLQDQ:         encoder::Opcode$< I_VPUNPCKLQDQ >::Test(list, is64); break;
             case I_VPUNPCKLWD:          encoder::Opcode$< I_VPUNPCKLWD >::Test(list, is64); break;
+            case I_VPXOR:               encoder::Opcode$< I_VPXOR >::Test(list, is64); break;
             case I_VPXORD:              encoder::Opcode$< I_VPXORD >::Test(list, is64); break;
             case I_VPXORQ:              encoder::Opcode$< I_VPXORQ >::Test(list, is64); break;
-            case I_VPXOR:               encoder::Opcode$< I_VPXOR >::Test(list, is64); break;
             case I_VRCP14PD:            encoder::Opcode$< I_VRCP14PD >::Test(list, is64); break;
             case I_VRCP14PS:            encoder::Opcode$< I_VRCP14PS >::Test(list, is64); break;
             case I_VRCP14SD:            encoder::Opcode$< I_VRCP14SD >::Test(list, is64); break;
@@ -4027,10 +2928,14 @@ namespace jitasm
             case I_VSUBSS:              encoder::Opcode$< I_VSUBSS >::Test(list, is64); break;
             case I_VTESTPD:             encoder::Opcode$< I_VTESTPD >::Test(list, is64); break;
             case I_VTESTPS:             encoder::Opcode$< I_VTESTPS >::Test(list, is64); break;
+            case I_VUCOMISD:            encoder::Opcode$< I_VUCOMISD >::Test(list, is64); break;
+            case I_VUCOMISS:            encoder::Opcode$< I_VUCOMISS >::Test(list, is64); break;
             case I_VUNPCKHPD:           encoder::Opcode$< I_VUNPCKHPD >::Test(list, is64); break;
             case I_VUNPCKHPS:           encoder::Opcode$< I_VUNPCKHPS >::Test(list, is64); break;
             case I_VUNPCKLPD:           encoder::Opcode$< I_VUNPCKLPD >::Test(list, is64); break;
             case I_VUNPCKLPS:           encoder::Opcode$< I_VUNPCKLPS >::Test(list, is64); break;
+            case I_VXORPD:              encoder::Opcode$< I_VXORPD >::Test(list, is64); break;
+            case I_VXORPS:              encoder::Opcode$< I_VXORPS >::Test(list, is64); break;
             case I_VZEROALL:            encoder::Opcode$< I_VZEROALL >::Test(list, is64); break;
             case I_VZEROUPPER:          encoder::Opcode$< I_VZEROUPPER >::Test(list, is64); break;
             case I_WAIT:                encoder::Opcode$< I_WAIT >::Test(list, is64); break;
@@ -4040,9 +2945,9 @@ namespace jitasm
             case I_WRMSR:               encoder::Opcode$< I_WRMSR >::Test(list, is64); break;
             case I_XABORT:              encoder::Opcode$< I_XABORT >::Test(list, is64); break;
             case I_XACQUIRE:            encoder::Opcode$< I_XACQUIRE >::Test(list, is64); break;
+            case I_XADD:                encoder::Opcode$< I_XADD >::Test(list, is64); break;
             case I_XBEGIN:              encoder::Opcode$< I_XBEGIN >::Test(list, is64); break;
             case I_XCHG:                encoder::Opcode$< I_XCHG >::Test(list, is64); break;
-            case I_FXCH:                encoder::Opcode$< I_FXCH >::Test(list, is64); break;
             case I_XCRYPTCBC:           encoder::Opcode$< I_XCRYPTCBC >::Test(list, is64); break;
             case I_XCRYPTCFB:           encoder::Opcode$< I_XCRYPTCFB >::Test(list, is64); break;
             case I_XCRYPTCTR:           encoder::Opcode$< I_XCRYPTCTR >::Test(list, is64); break;
@@ -4051,6 +2956,9 @@ namespace jitasm
             case I_XEND:                encoder::Opcode$< I_XEND >::Test(list, is64); break;
             case I_XGETBV:              encoder::Opcode$< I_XGETBV >::Test(list, is64); break;
             case I_XLATB:               encoder::Opcode$< I_XLATB >::Test(list, is64); break;
+            case I_XOR:                 encoder::Opcode$< I_XOR >::Test(list, is64); break;
+            case I_XORPD:               encoder::Opcode$< I_XORPD >::Test(list, is64); break;
+            case I_XORPS:               encoder::Opcode$< I_XORPS >::Test(list, is64); break;
             case I_XRELEASE:            encoder::Opcode$< I_XRELEASE >::Test(list, is64); break;
             case I_XRSTOR:              encoder::Opcode$< I_XRSTOR >::Test(list, is64); break;
             case I_XRSTOR64:            encoder::Opcode$< I_XRSTOR64 >::Test(list, is64); break;

@@ -153,8 +153,8 @@ namespace jitasm
 
             struct Opd
             {
-                uint8 opdtype_;	// OpdType
-                uint8 opdsize_;	// OpdSize
+                uint8 opdtype_; // OpdType
+                uint8 opdsize_; // OpdSize
 
                 union
                 {
@@ -167,12 +167,12 @@ namespace jitasm
                     // MEM
                     struct
                     {
-                        RegID	base_;
-                        RegID	index_;
-                        sint64	scale_;
-                        sint64	disp_;
-                        uint8	base_size_ : 4;		// OpdSize
-                        uint8	index_size_ : 4;	// OpdSize
+                        RegID   base_;
+                        RegID   index_;
+                        sint64  scale_;
+                        sint64  disp_;
+                        uint8   base_size_ : 4;     // OpdSize
+                        uint8   index_size_ : 4;    // OpdSize
                     };
                     // IMM
                     sint64 imm_;
@@ -201,59 +201,59 @@ namespace jitasm
                 }
 
             public:
-                bool	IsNone() const
+                bool    IsNone() const
                 {
                     return (opdtype_ & O_TYPE_TYPE_MASK) == O_TYPE_NONE;
                 }
-                bool	IsReg() const
+                bool    IsReg() const
                 {
                     return (opdtype_ & O_TYPE_TYPE_MASK) == O_TYPE_REG;
                 }
-                bool	IsGpReg() const
+                bool    IsGpReg() const
                 {
                     return IsReg() && ((reg_.type & ~(R_TYPE_SYMBOLIC_MASK | R_TYPE_MAPPED_MASK)) == R_TYPE_GP);
                 }
-                bool	IsFpuReg() const
+                bool    IsFpuReg() const
                 {
                     return IsReg() && reg_.type == R_TYPE_FPU;
                 }
-                bool	IsMmxReg() const
+                bool    IsMmxReg() const
                 {
                     return IsReg() && ((reg_.type & ~(R_TYPE_SYMBOLIC_MASK | R_TYPE_MAPPED_MASK)) == R_TYPE_MMX);
                 }
-                bool	IsXmmReg() const
+                bool    IsXmmReg() const
                 {
                     return IsReg() && ((reg_.type & ~(R_TYPE_SYMBOLIC_MASK | R_TYPE_MAPPED_MASK)) == R_TYPE_XMM);
                 }
-                bool	IsYmmReg() const
+                bool    IsYmmReg() const
                 {
                     return IsReg() && ((reg_.type & ~(R_TYPE_SYMBOLIC_MASK | R_TYPE_MAPPED_MASK)) == R_TYPE_YMM);
                 }
-                bool	IsRip() const
+                bool    IsRip() const
                 {
                     return IsReg() && reg_.type == R_TYPE_IP;
                 }
-                bool	IsMem() const
+                bool    IsMem() const
                 {
                     return (opdtype_ & O_TYPE_TYPE_MASK) == O_TYPE_MEM;
                 }
-                bool	IsRegOrMem() const
+                bool    IsRegOrMem() const
                 {
                     return (opdtype_ & (O_TYPE_MEM | O_TYPE_REG)) != 0;
                 }
-                bool	IsImm() const
+                bool    IsImm() const
                 {
                     return (opdtype_ & O_TYPE_TYPE_MASK) == O_TYPE_IMM;
                 }
-                bool	IsDummy() const
+                bool    IsDummy() const
                 {
                     return (opdtype_ & O_TYPE_DUMMY) != 0;
                 }
-                bool	IsRead() const
+                bool    IsRead() const
                 {
                     return (opdtype_ & O_TYPE_READ) != 0;
                 }
-                bool	IsWrite() const
+                bool    IsWrite() const
                 {
                     return (opdtype_ & O_TYPE_WRITE) != 0;
                 }
@@ -262,39 +262,39 @@ namespace jitasm
                 {
                     return static_cast< OpdType >(opdtype_);
                 }
-                OpdSize	GetSize() const
+                OpdSize GetSize() const
                 {
                     return static_cast< OpdSize >(opdsize_);
                 }
-                OpdSize	GetAddressBaseSize() const
+                OpdSize GetAddressBaseSize() const
                 {
                     return static_cast< OpdSize >(base_size_);
                 }
-                OpdSize	GetAddressIndexSize() const
+                OpdSize GetAddressIndexSize() const
                 {
                     return static_cast< OpdSize >(index_size_);
                 }
-                RegID	GetReg() const
+                RegID   GetReg() const
                 {
                     return reg_;
                 }
-                RegID	GetBase() const
+                RegID   GetBase() const
                 {
                     return base_;
                 }
-                RegID	GetIndex() const
+                RegID   GetIndex() const
                 {
                     return index_;
                 }
-                sint64	GetScale() const
+                sint64  GetScale() const
                 {
                     return scale_;
                 }
-                sint64	GetDisp() const	
+                sint64  GetDisp() const 
                 {
                     return disp_;
                 }
-                sint64	GetImm() const
+                sint64  GetImm() const
                 {
                     return imm_;
                 }
@@ -429,18 +429,18 @@ namespace jitasm
                 }
             };
 
-        }	// namespace detail
+        }   // namespace detail
 
-        typedef detail::Opd$<    8 >	Opd8;
-        typedef detail::Opd$<   16 >	Opd16;
-        typedef detail::Opd$<   32 >	Opd32;
-        typedef detail::Opd$<   64 >	Opd64;
-        typedef detail::Opd$<   80 >	Opd80;
-        typedef detail::Opd$<  128 >	Opd128;
-        typedef detail::Opd$<  224 >	Opd224;
-        typedef detail::Opd$<  256 >	Opd256;
-        typedef detail::Opd$<  864 >	Opd864;
-        typedef detail::Opd$< 4096 >	Opd4096;
+        typedef detail::Opd$<    8 >    Opd8;
+        typedef detail::Opd$<   16 >    Opd16;
+        typedef detail::Opd$<   32 >    Opd32;
+        typedef detail::Opd$<   64 >    Opd64;
+        typedef detail::Opd$<   80 >    Opd80;
+        typedef detail::Opd$<  128 >    Opd128;
+        typedef detail::Opd$<  224 >    Opd224;
+        typedef detail::Opd$<  256 >    Opd256;
+        typedef detail::Opd$<  864 >    Opd864;
+        typedef detail::Opd$< 4096 >    Opd4096;
 
         struct Reg8 : Opd8
         {
@@ -612,40 +612,40 @@ namespace jitasm
             {
             }
         };
-        typedef Mem$<Opd8>		Mem8;
-        typedef Mem$<Opd16>		Mem16;
-        typedef Mem$<Opd32>		Mem32;
-        typedef Mem$<Opd64>		Mem64;
-        typedef Mem$<Opd80>		Mem80;
-        typedef Mem$<Opd128>	Mem128;
-        typedef Mem$<Opd224>	Mem224;		// FPU environment
-        typedef Mem$<Opd256>	Mem256;
-        typedef Mem$<Opd864>	Mem864;		// FPU state
-        typedef Mem$<Opd4096>	Mem4096;	// FPU, MMX, XMM, MXCSR state
+        typedef Mem$<Opd8>      Mem8;
+        typedef Mem$<Opd16>     Mem16;
+        typedef Mem$<Opd32>     Mem32;
+        typedef Mem$<Opd64>     Mem64;
+        typedef Mem$<Opd80>     Mem80;
+        typedef Mem$<Opd128>    Mem128;
+        typedef Mem$<Opd224>    Mem224;     // FPU environment
+        typedef Mem$<Opd256>    Mem256;
+        typedef Mem$<Opd864>    Mem864;     // FPU state
+        typedef Mem$<Opd4096>   Mem4096;    // FPU, MMX, XMM, MXCSR state
 
         template< class OpdN, OpdSize IndexSize >
         struct VecMem$ : OpdN
         {
             VecMem$(OpdSize base_size, RegID const & base, RegID const & index, sint64 scale, sint64 disp) : OpdN(base_size, IndexSize, base, index, scale, disp) {}
         };
-        typedef VecMem$< Opd32, O_SIZE_128 >	Mem32vxd;
-        typedef VecMem$< Opd32, O_SIZE_256 >	Mem32vyd;
-        typedef VecMem$< Opd32, O_SIZE_128 >	Mem64vxd;
-        typedef VecMem$< Opd32, O_SIZE_256 >	Mem64vyd;
-        typedef VecMem$< Opd64, O_SIZE_128 >	Mem32vxq;
-        typedef VecMem$< Opd64, O_SIZE_256 >	Mem32vyq;
-        typedef VecMem$< Opd64, O_SIZE_128 >	Mem64vxq;
-        typedef VecMem$< Opd64, O_SIZE_256 >	Mem64vyq;
+        typedef VecMem$< Opd32, O_SIZE_128 >    Mem32vxd;
+        typedef VecMem$< Opd32, O_SIZE_256 >    Mem32vyd;
+        typedef VecMem$< Opd32, O_SIZE_128 >    Mem64vxd;
+        typedef VecMem$< Opd32, O_SIZE_256 >    Mem64vyd;
+        typedef VecMem$< Opd64, O_SIZE_128 >    Mem32vxq;
+        typedef VecMem$< Opd64, O_SIZE_256 >    Mem32vyq;
+        typedef VecMem$< Opd64, O_SIZE_128 >    Mem64vxq;
+        typedef VecMem$< Opd64, O_SIZE_256 >    Mem64vyq;
 
         template< class OpdN, class U, class S >
         struct Imm$ : OpdN
         {
             Imm$(U imm) : OpdN((S)imm) {}
         };
-        typedef Imm$<Opd8, uint8, sint8>	Imm8;	///< 1 byte immediate
-        typedef Imm$<Opd16, uint16, sint16>	Imm16;	///< 2 byte immediate
-        typedef Imm$<Opd32, uint32, sint32>	Imm32;	///< 4 byte immediate
-        typedef Imm$<Opd64, uint64, sint64>	Imm64;	///< 8 byte immediate
+        typedef Imm$<Opd8, uint8, sint8>    Imm8;   ///< 1 byte immediate
+        typedef Imm$<Opd16, uint16, sint16> Imm16;  ///< 2 byte immediate
+        typedef Imm$<Opd32, uint32, sint32> Imm32;  ///< 4 byte immediate
+        typedef Imm$<Opd64, uint64, sint64> Imm64;  ///< 8 byte immediate
 
         namespace detail
         {
@@ -959,7 +959,7 @@ namespace jitasm
             sint64 disp_;
             Addr64(Reg64 const & obj)
                 : reg_(obj.reg_), disp_(0)
-            {}	// implicit
+            {}  // implicit
             Addr64(RegID const & reg, sint64 disp)
                 : reg_(reg), disp_(disp)
             {
@@ -1159,7 +1159,6 @@ namespace jitasm
             I_AAD,
             I_AAM,
             I_AAS,
-            I_FABS,
             I_ADC,
             I_ADCX,
             I_ADD,
@@ -1169,14 +1168,11 @@ namespace jitasm
             I_ADDSS,
             I_ADDSUBPD,
             I_ADDSUBPS,
-            I_FADD,
-            I_FIADD,
-            I_FADDP,
             I_ADOX,
-            I_AESDECLAST,
             I_AESDEC,
-            I_AESENCLAST,
+            I_AESDECLAST,
             I_AESENC,
+            I_AESENCLAST,
             I_AESIMC,
             I_AESKEYGENASSIST,
             I_AND,
@@ -1214,7 +1210,6 @@ namespace jitasm
             I_CBW,
             I_CDQ,
             I_CDQE,
-            I_FCHS,
             I_CLAC,
             I_CLC,
             I_CLD,
@@ -1224,32 +1219,30 @@ namespace jitasm
             I_CLTS,
             I_CMC,
             I_CMOVcc,
-            I_FCMOVcc,
             I_CMP,
-            I_CMPS,
             I_CMPPD,
             I_CMPPS,
+            I_CMPS,
             I_CMPSD,
             I_CMPSS,
-            I_CMPXCHG16B,
             I_CMPXCHG,
+            I_CMPXCHG16B,
             I_CMPXCHG8B,
             I_COMISD,
             I_COMISS,
-            I_FCOMP,
-            I_FCOMPI,
-            I_FCOMI,
-            I_FCOM,
-            I_FCOS,
             I_CPUID,
             I_CQO,
             I_CRC32,
             I_CVTDQ2PD,
             I_CVTDQ2PS,
             I_CVTPD2DQ,
+            I_CVTPD2PI,
             I_CVTPD2PS,
+            I_CVTPI2PD,
+            I_CVTPI2PS,
             I_CVTPS2DQ,
             I_CVTPS2PD,
+            I_CVTPS2PI,
             I_CVTSD2SI,
             I_CVTSD2SS,
             I_CVTSI2SD,
@@ -1257,7 +1250,9 @@ namespace jitasm
             I_CVTSS2SD,
             I_CVTSS2SI,
             I_CVTTPD2DQ,
+            I_CVTTPD2PI,
             I_CVTTPS2DQ,
+            I_CVTTPS2PI,
             I_CVTTSD2SI,
             I_CVTTSS2SI,
             I_CWD,
@@ -1269,34 +1264,52 @@ namespace jitasm
             I_DIV,
             I_DIVPD,
             I_DIVPS,
-            I_FDIVR,
-            I_FIDIVR,
-            I_FDIVRP,
             I_DIVSD,
             I_DIVSS,
-            I_FDIV,
-            I_FIDIV,
-            I_FDIVP,
             I_DPPD,
             I_DPPS,
-            I_RET,
+            I_EMMS,
             I_ENCLS,
             I_ENCLU,
             I_ENTER,
             I_EXTRACTPS,
             I_EXTRQ,
             I_F2XM1,
-            I_LCALL,
-            I_LJMP,
+            I_FABS,
+            I_FADD,
+            I_FADDP,
             I_FBLD,
             I_FBSTP,
+            I_FCHS,
+            I_FCMOVcc,
+            I_FCOM,
+            I_FCOMI,
+            I_FCOMP,
+            I_FCOMPI,
             I_FCOMPP,
+            I_FCOS,
             I_FDECSTP,
+            I_FDIV,
+            I_FDIVP,
+            I_FDIVR,
+            I_FDIVRP,
             I_FEMMS,
             I_FFREE,
+            I_FIADD,
             I_FICOM,
             I_FICOMP,
+            I_FIDIV,
+            I_FIDIVR,
+            I_FILD,
+            I_FIMUL,
             I_FINCSTP,
+            I_FIST,
+            I_FISTP,
+            I_FISTTP,
+            I_FISUB,
+            I_FISUBR,
+            I_FLD,
+            I_FLD1,
             I_FLDCW,
             I_FLDENV,
             I_FLDL2E,
@@ -1304,10 +1317,15 @@ namespace jitasm
             I_FLDLG2,
             I_FLDLN2,
             I_FLDPI,
+            I_FLDZ,
+            I_FMUL,
+            I_FMULP,
             I_FNCLEX,
             I_FNINIT,
             I_FNOP,
+            I_FNSAVE,
             I_FNSTCW,
+            I_FNSTENV,
             I_FNSTSW,
             I_FPATAN,
             I_FPREM,
@@ -1315,12 +1333,26 @@ namespace jitasm
             I_FPTAN,
             I_FRNDINT,
             I_FRSTOR,
-            I_FNSAVE,
             I_FSCALE,
             I_FSETPM,
+            I_FSIN,
             I_FSINCOS,
-            I_FNSTENV,
+            I_FSQRT,
+            I_FST,
+            I_FSTP,
+            I_FSTPNCE,
+            I_FSUB,
+            I_FSUBP,
+            I_FSUBR,
+            I_FSUBRP,
+            I_FTST,
+            I_FUCOM,
+            I_FUCOMI,
+            I_FUCOMP,
+            I_FUCOMPI,
+            I_FUCOMPP,
             I_FXAM,
+            I_FXCH,
             I_FXRSTOR,
             I_FXRSTOR64,
             I_FXSAVE,
@@ -1328,14 +1360,6 @@ namespace jitasm
             I_FXTRACT,
             I_FYL2X,
             I_FYL2XP1,
-            I_MOVAPD,
-            I_MOVAPS,
-            I_ORPD,
-            I_ORPS,
-            I_VMOVAPD,
-            I_VMOVAPS,
-            I_XORPD,
-            I_XORPS,
             I_GETSEC,
             I_HADDPD,
             I_HADDPS,
@@ -1343,15 +1367,12 @@ namespace jitasm
             I_HSUBPD,
             I_HSUBPS,
             I_IDIV,
-            I_FILD,
             I_IMUL,
             I_IN,
             I_INC,
-            I_INSB,
+            I_INS,
             I_INSERTPS,
             I_INSERTQ,
-            I_INSD,
-            I_INSW,
             I_INT,
             I_INT1,
             I_INT3,
@@ -1365,26 +1386,6 @@ namespace jitasm
             I_IRET,
             I_IRETD,
             I_IRETQ,
-            I_FISTTP,
-            I_FIST,
-            I_FISTP,
-            I_UCOMISD,
-            I_UCOMISS,
-            I_VCMP,
-            I_VCOMISD,
-            I_VCOMISS,
-            I_VCVTSD2SS,
-            I_VCVTSI2SD,
-            I_VCVTSI2SS,
-            I_VCVTSS2SD,
-            I_VCVTTSD2SI,
-            I_VCVTTSD2USI,
-            I_VCVTTSS2SI,
-            I_VCVTTSS2USI,
-            I_VCVTUSI2SD,
-            I_VCVTUSI2SS,
-            I_VUCOMISD,
-            I_VUCOMISS,
             I_JCC,
             I_JMP,
             I_KANDB,
@@ -1421,12 +1422,10 @@ namespace jitasm
             I_KXORW,
             I_LAHF,
             I_LAR,
+            I_LCALL,
             I_LDDQU,
             I_LDMXCSR,
             I_LDS,
-            I_FLDZ,
-            I_FLD1,
-            I_FLD,
             I_LEA,
             I_LEAVE,
             I_LES,
@@ -1435,22 +1434,18 @@ namespace jitasm
             I_LGDT,
             I_LGS,
             I_LIDT,
+            I_LJMP,
             I_LLDT,
             I_LMSW,
-            I_OR,
             I_LOCK,
-            I_SUB,
-            I_XOR,
             I_LODS,
             I_LOOPCC,
-            I_RETF,
-            I_RETFQ,
             I_LSL,
             I_LSS,
             I_LTR,
-            I_XADD,
             I_LZCNT,
             I_MASKMOVDQU,
+            I_MASKMOVQ,
             I_MAXPD,
             I_MAXPS,
             I_MAXSD,
@@ -1460,100 +1455,16 @@ namespace jitasm
             I_MINPS,
             I_MINSD,
             I_MINSS,
-            I_CVTPD2PI,
-            I_CVTPI2PD,
-            I_CVTPI2PS,
-            I_CVTPS2PI,
-            I_CVTTPD2PI,
-            I_CVTTPS2PI,
-            I_EMMS,
-            I_MASKMOVQ,
-            I_MOVD,
-            I_MOVDQ2Q,
-            I_MOVNTQ,
-            I_MOVQ2DQ,
-            I_MOVQ,
-            I_PABSB,
-            I_PABSD,
-            I_PABSW,
-            I_PACKSSDW,
-            I_PACKSSWB,
-            I_PACKUSWB,
-            I_PADDB,
-            I_PADDD,
-            I_PADDQ,
-            I_PADDSB,
-            I_PADDSW,
-            I_PADDUSB,
-            I_PADDUSW,
-            I_PADDW,
-            I_PALIGNR,
-            I_PANDN,
-            I_PAND,
-            I_PAVGB,
-            I_PAVGW,
-            I_PCMPEQB,
-            I_PCMPEQD,
-            I_PCMPEQW,
-            I_PCMPGTB,
-            I_PCMPGTD,
-            I_PCMPGTW,
-            I_PEXTRW,
-            I_PHADDSW,
-            I_PHADDW,
-            I_PHADDD,
-            I_PHSUBD,
-            I_PHSUBSW,
-            I_PHSUBW,
-            I_PINSRW,
-            I_PMADDUBSW,
-            I_PMADDWD,
-            I_PMAXSW,
-            I_PMAXUB,
-            I_PMINSW,
-            I_PMINUB,
-            I_PMOVMSKB,
-            I_PMULHRSW,
-            I_PMULHUW,
-            I_PMULHW,
-            I_PMULLW,
-            I_PMULUDQ,
-            I_POR,
-            I_PSADBW,
-            I_PSHUFB,
-            I_PSHUFW,
-            I_PSIGNB,
-            I_PSIGND,
-            I_PSIGNW,
-            I_PSLLD,
-            I_PSLLQ,
-            I_PSLLW,
-            I_PSRAD,
-            I_PSRAW,
-            I_PSRLD,
-            I_PSRLQ,
-            I_PSRLW,
-            I_PSUBB,
-            I_PSUBD,
-            I_PSUBQ,
-            I_PSUBSB,
-            I_PSUBSW,
-            I_PSUBUSB,
-            I_PSUBUSW,
-            I_PSUBW,
-            I_PUNPCKHBW,
-            I_PUNPCKHDQ,
-            I_PUNPCKHWD,
-            I_PUNPCKLBW,
-            I_PUNPCKLDQ,
-            I_PUNPCKLWD,
-            I_PXOR,
             I_MONITOR,
             I_MONTMUL,
             I_MOV,
             I_MOVABS,
+            I_MOVAPD,
+            I_MOVAPS,
             I_MOVBE,
+            I_MOVD,
             I_MOVDDUP,
+            I_MOVDQ2Q,
             I_MOVDQA,
             I_MOVDQU,
             I_MOVHLPS,
@@ -1564,14 +1475,18 @@ namespace jitasm
             I_MOVLPS,
             I_MOVMSKPD,
             I_MOVMSKPS,
-            I_MOVNTDQA,
             I_MOVNTDQ,
+            I_MOVNTDQA,
             I_MOVNTI,
             I_MOVNTPD,
             I_MOVNTPS,
+            I_MOVNTQ,
             I_MOVNTSD,
             I_MOVNTSS,
+            I_MOVQ,
+            I_MOVQ2DQ,
             I_MOVS,
+            I_MOVSD,
             I_MOVSHDUP,
             I_MOVSLDUP,
             I_MOVSS,
@@ -1587,27 +1502,50 @@ namespace jitasm
             I_MULSD,
             I_MULSS,
             I_MULX,
-            I_FMUL,
-            I_FIMUL,
-            I_FMULP,
             I_MWAIT,
             I_NEG,
             I_NOP,
             I_NOT,
+            I_OR,
+            I_ORPD,
+            I_ORPS,
             I_OUT,
-            I_OUTSB,
-            I_OUTSD,
-            I_OUTSW,
+            I_OUTS,
+            I_PABSB,
+            I_PABSD,
+            I_PABSW,
+            I_PACKSSDW,
+            I_PACKSSWB,
             I_PACKUSDW,
+            I_PACKUSWB,
+            I_PADDB,
+            I_PADDD,
+            I_PADDQ,
+            I_PADDSB,
+            I_PADDSW,
+            I_PADDUSB,
+            I_PADDUSW,
+            I_PADDW,
+            I_PALIGNR,
+            I_PAND,
+            I_PANDN,
             I_PAUSE,
+            I_PAVGB,
             I_PAVGUSB,
+            I_PAVGW,
             I_PBLENDVB,
             I_PBLENDW,
             I_PCLMULQDQ,
+            I_PCMPEQB,
+            I_PCMPEQD,
             I_PCMPEQQ,
+            I_PCMPEQW,
             I_PCMPESTRI,
             I_PCMPESTRM,
+            I_PCMPGTB,
+            I_PCMPGTD,
             I_PCMPGTQ,
+            I_PCMPGTW,
             I_PCMPISTRI,
             I_PCMPISTRM,
             I_PDEP,
@@ -1615,6 +1553,7 @@ namespace jitasm
             I_PEXTRB,
             I_PEXTRD,
             I_PEXTRQ,
+            I_PEXTRW,
             I_PF2ID,
             I_PF2IW,
             I_PFACC,
@@ -1627,27 +1566,41 @@ namespace jitasm
             I_PFMUL,
             I_PFNACC,
             I_PFPNACC,
+            I_PFRCP,
             I_PFRCPIT1,
             I_PFRCPIT2,
-            I_PFRCP,
             I_PFRSQIT1,
             I_PFRSQRT,
-            I_PFSUBR,
             I_PFSUB,
+            I_PFSUBR,
+            I_PHADDD,
+            I_PHADDSW,
+            I_PHADDW,
             I_PHMINPOSUW,
+            I_PHSUBD,
+            I_PHSUBSW,
+            I_PHSUBW,
             I_PI2FD,
             I_PI2FW,
             I_PINSRB,
             I_PINSRD,
             I_PINSRQ,
+            I_PINSRW,
+            I_PMADDUBSW,
+            I_PMADDWD,
             I_PMAXSB,
             I_PMAXSD,
+            I_PMAXSW,
+            I_PMAXUB,
             I_PMAXUD,
             I_PMAXUW,
             I_PMINSB,
             I_PMINSD,
+            I_PMINSW,
+            I_PMINUB,
             I_PMINUD,
             I_PMINUW,
+            I_PMOVMSKB,
             I_PMOVSXBD,
             I_PMOVSXBQ,
             I_PMOVSXBW,
@@ -1661,36 +1614,71 @@ namespace jitasm
             I_PMOVZXWD,
             I_PMOVZXWQ,
             I_PMULDQ,
+            I_PMULHRSW,
             I_PMULHRW,
+            I_PMULHUW,
+            I_PMULHW,
             I_PMULLD,
+            I_PMULLW,
+            I_PMULUDQ,
             I_POP,
-            I_POPAW,
             I_POPAL,
+            I_POPAW,
             I_POPCNT,
             I_POPF,
             I_POPFD,
             I_POPFQ,
+            I_POR,
             I_PREFETCH,
             I_PREFETCHNTA,
             I_PREFETCHT0,
             I_PREFETCHT1,
             I_PREFETCHT2,
             I_PREFETCHW,
+            I_PSADBW,
+            I_PSHUFB,
             I_PSHUFD,
             I_PSHUFHW,
             I_PSHUFLW,
+            I_PSHUFW,
+            I_PSIGNB,
+            I_PSIGND,
+            I_PSIGNW,
+            I_PSLLD,
             I_PSLLDQ,
+            I_PSLLQ,
+            I_PSLLW,
+            I_PSRAD,
+            I_PSRAW,
+            I_PSRLD,
             I_PSRLDQ,
+            I_PSRLQ,
+            I_PSRLW,
+            I_PSUBB,
+            I_PSUBD,
+            I_PSUBQ,
+            I_PSUBSB,
+            I_PSUBSW,
+            I_PSUBUSB,
+            I_PSUBUSW,
+            I_PSUBW,
             I_PSWAPD,
             I_PTEST,
+            I_PUNPCKHBW,
+            I_PUNPCKHDQ,
             I_PUNPCKHQDQ,
+            I_PUNPCKHWD,
+            I_PUNPCKLBW,
+            I_PUNPCKLDQ,
             I_PUNPCKLQDQ,
+            I_PUNPCKLWD,
             I_PUSH,
-            I_PUSHAW,
             I_PUSHAL,
+            I_PUSHAW,
             I_PUSHF,
             I_PUSHFD,
             I_PUSHFQ,
+            I_PXOR,
             I_RCL,
             I_RCPPS,
             I_RCPSS,
@@ -1703,8 +1691,11 @@ namespace jitasm
             I_RDSEED,
             I_RDTSC,
             I_RDTSCP,
-            I_REPNE,
             I_REP,
+            I_REPNE,
+            I_RET,
+            I_RETF,
+            I_RETFQ,
             I_ROL,
             I_ROR,
             I_RORX,
@@ -1741,7 +1732,6 @@ namespace jitasm
             I_SHUFPD,
             I_SHUFPS,
             I_SIDT,
-            I_FSIN,
             I_SKINIT,
             I_SLDT,
             I_SMSW,
@@ -1749,7 +1739,6 @@ namespace jitasm
             I_SQRTPS,
             I_SQRTSD,
             I_SQRTSS,
-            I_FSQRT,
             I_STAC,
             I_STC,
             I_STD,
@@ -1758,19 +1747,11 @@ namespace jitasm
             I_STMXCSR,
             I_STOS,
             I_STR,
-            I_FST,
-            I_FSTP,
-            I_FSTPNCE,
+            I_SUB,
             I_SUBPD,
             I_SUBPS,
-            I_FSUBR,
-            I_FISUBR,
-            I_FSUBRP,
             I_SUBSD,
             I_SUBSS,
-            I_FSUB,
-            I_FISUB,
-            I_FSUBP,
             I_SWAPGS,
             I_SYSCALL,
             I_SYSENTER,
@@ -1778,15 +1759,11 @@ namespace jitasm
             I_SYSRET,
             I_T1MSKC,
             I_TEST,
-            I_UD2,
-            I_FTST,
             I_TZCNT,
             I_TZMSK,
-            I_FUCOMPI,
-            I_FUCOMI,
-            I_FUCOMPP,
-            I_FUCOMP,
-            I_FUCOM,
+            I_UCOMISD,
+            I_UCOMISS,
+            I_UD2,
             I_UD2B,
             I_UNPCKHPD,
             I_UNPCKHPS,
@@ -1798,10 +1775,10 @@ namespace jitasm
             I_VADDSS,
             I_VADDSUBPD,
             I_VADDSUBPS,
-            I_VAESDECLAST,
             I_VAESDEC,
-            I_VAESENCLAST,
+            I_VAESDECLAST,
             I_VAESENC,
+            I_VAESENCLAST,
             I_VAESIMC,
             I_VAESKEYGENASSIST,
             I_VALIGND,
@@ -1822,16 +1799,19 @@ namespace jitasm
             I_VBROADCASTI64X4,
             I_VBROADCASTSD,
             I_VBROADCASTSS,
+            I_VCMP,
             I_VCMPPD,
             I_VCMPPS,
             I_VCMPSD,
             I_VCMPSS,
+            I_VCOMISD,
+            I_VCOMISS,
             I_VCVTDQ2PD,
             I_VCVTDQ2PS,
-            I_VCVTPD2DQX,
             I_VCVTPD2DQ,
-            I_VCVTPD2PSX,
+            I_VCVTPD2DQX,
             I_VCVTPD2PS,
+            I_VCVTPD2PSX,
             I_VCVTPD2UDQ,
             I_VCVTPH2PS,
             I_VCVTPS2DQ,
@@ -1839,16 +1819,26 @@ namespace jitasm
             I_VCVTPS2PH,
             I_VCVTPS2UDQ,
             I_VCVTSD2SI,
+            I_VCVTSD2SS,
             I_VCVTSD2USI,
+            I_VCVTSI2SD,
+            I_VCVTSI2SS,
+            I_VCVTSS2SD,
             I_VCVTSS2SI,
             I_VCVTSS2USI,
-            I_VCVTTPD2DQX,
             I_VCVTTPD2DQ,
+            I_VCVTTPD2DQX,
             I_VCVTTPD2UDQ,
             I_VCVTTPS2DQ,
             I_VCVTTPS2UDQ,
+            I_VCVTTSD2SI,
+            I_VCVTTSD2USI,
+            I_VCVTTSS2SI,
+            I_VCVTTSS2USI,
             I_VCVTUDQ2PD,
             I_VCVTUDQ2PS,
+            I_VCVTUSI2SD,
+            I_VCVTUSI2SS,
             I_VDIVPD,
             I_VDIVPS,
             I_VDIVSD,
@@ -1866,92 +1856,88 @@ namespace jitasm
             I_VEXTRACTPS,
             I_VFMADD132PD,
             I_VFMADD132PS,
+            I_VFMADD132SD,
+            I_VFMADD132SS,
             I_VFMADD213PD,
             I_VFMADD213PS,
-            I_VFMADDPD,
-            I_VFMADD231PD,
-            I_VFMADDPS,
-            I_VFMADD231PS,
-            I_VFMADDSD,
             I_VFMADD213SD,
-            I_VFMADD132SD,
-            I_VFMADD231SD,
-            I_VFMADDSS,
             I_VFMADD213SS,
-            I_VFMADD132SS,
+            I_VFMADD231PD,
+            I_VFMADD231PS,
+            I_VFMADD231SD,
             I_VFMADD231SS,
+            I_VFMADDPD,
+            I_VFMADDPS,
+            I_VFMADDSD,
+            I_VFMADDSS,
             I_VFMADDSUB132PD,
             I_VFMADDSUB132PS,
             I_VFMADDSUB213PD,
             I_VFMADDSUB213PS,
-            I_VFMADDSUBPD,
             I_VFMADDSUB231PD,
-            I_VFMADDSUBPS,
             I_VFMADDSUB231PS,
+            I_VFMADDSUBPD,
+            I_VFMADDSUBPS,
             I_VFMSUB132PD,
             I_VFMSUB132PS,
+            I_VFMSUB132SD,
+            I_VFMSUB132SS,
             I_VFMSUB213PD,
             I_VFMSUB213PS,
+            I_VFMSUB213SD,
+            I_VFMSUB213SS,
+            I_VFMSUB231PD,
+            I_VFMSUB231PS,
+            I_VFMSUB231SD,
+            I_VFMSUB231SS,
             I_VFMSUBADD132PD,
             I_VFMSUBADD132PS,
             I_VFMSUBADD213PD,
             I_VFMSUBADD213PS,
-            I_VFMSUBADDPD,
             I_VFMSUBADD231PD,
-            I_VFMSUBADDPS,
             I_VFMSUBADD231PS,
+            I_VFMSUBADDPD,
+            I_VFMSUBADDPS,
             I_VFMSUBPD,
-            I_VFMSUB231PD,
             I_VFMSUBPS,
-            I_VFMSUB231PS,
             I_VFMSUBSD,
-            I_VFMSUB213SD,
-            I_VFMSUB132SD,
-            I_VFMSUB231SD,
             I_VFMSUBSS,
-            I_VFMSUB213SS,
-            I_VFMSUB132SS,
-            I_VFMSUB231SS,
             I_VFNMADD132PD,
             I_VFNMADD132PS,
+            I_VFNMADD132SD,
+            I_VFNMADD132SS,
             I_VFNMADD213PD,
             I_VFNMADD213PS,
-            I_VFNMADDPD,
-            I_VFNMADD231PD,
-            I_VFNMADDPS,
-            I_VFNMADD231PS,
-            I_VFNMADDSD,
             I_VFNMADD213SD,
-            I_VFNMADD132SD,
-            I_VFNMADD231SD,
-            I_VFNMADDSS,
             I_VFNMADD213SS,
-            I_VFNMADD132SS,
+            I_VFNMADD231PD,
+            I_VFNMADD231PS,
+            I_VFNMADD231SD,
             I_VFNMADD231SS,
+            I_VFNMADDPD,
+            I_VFNMADDPS,
+            I_VFNMADDSD,
+            I_VFNMADDSS,
             I_VFNMSUB132PD,
             I_VFNMSUB132PS,
+            I_VFNMSUB132SD,
+            I_VFNMSUB132SS,
             I_VFNMSUB213PD,
             I_VFNMSUB213PS,
-            I_VFNMSUBPD,
-            I_VFNMSUB231PD,
-            I_VFNMSUBPS,
-            I_VFNMSUB231PS,
-            I_VFNMSUBSD,
             I_VFNMSUB213SD,
-            I_VFNMSUB132SD,
-            I_VFNMSUB231SD,
-            I_VFNMSUBSS,
             I_VFNMSUB213SS,
-            I_VFNMSUB132SS,
+            I_VFNMSUB231PD,
+            I_VFNMSUB231PS,
+            I_VFNMSUB231SD,
             I_VFNMSUB231SS,
+            I_VFNMSUBPD,
+            I_VFNMSUBPS,
+            I_VFNMSUBSD,
+            I_VFNMSUBSS,
             I_VFRCZPD,
             I_VFRCZPS,
             I_VFRCZSD,
             I_VFRCZSS,
-            I_VORPD,
-            I_VORPS,
-            I_VXORPD,
-            I_VXORPS,
             I_VGATHERDPD,
             I_VGATHERDPS,
             I_VGATHERPF0DPD,
@@ -1994,17 +1980,18 @@ namespace jitasm
             I_VMLAUNCH,
             I_VMLOAD,
             I_VMMCALL,
-            I_VMOVQ,
-            I_VMOVDDUP,
+            I_VMOVAPD,
+            I_VMOVAPS,
             I_VMOVD,
+            I_VMOVDDUP,
+            I_VMOVDQA,
             I_VMOVDQA32,
             I_VMOVDQA64,
-            I_VMOVDQA,
+            I_VMOVDQU,
             I_VMOVDQU16,
             I_VMOVDQU32,
             I_VMOVDQU64,
             I_VMOVDQU8,
-            I_VMOVDQU,
             I_VMOVHLPS,
             I_VMOVHPD,
             I_VMOVHPS,
@@ -2013,10 +2000,11 @@ namespace jitasm
             I_VMOVLPS,
             I_VMOVMSKPD,
             I_VMOVMSKPS,
-            I_VMOVNTDQA,
             I_VMOVNTDQ,
+            I_VMOVNTDQA,
             I_VMOVNTPD,
             I_VMOVNTPS,
+            I_VMOVQ,
             I_VMOVSD,
             I_VMOVSHDUP,
             I_VMOVSLDUP,
@@ -2037,6 +2025,8 @@ namespace jitasm
             I_VMWRITE,
             I_VMXOFF,
             I_VMXON,
+            I_VORPD,
+            I_VORPS,
             I_VPABSB,
             I_VPABSD,
             I_VPABSQ,
@@ -2054,12 +2044,12 @@ namespace jitasm
             I_VPADDUSW,
             I_VPADDW,
             I_VPALIGNR,
+            I_VPAND,
             I_VPANDD,
+            I_VPANDN,
             I_VPANDND,
             I_VPANDNQ,
-            I_VPANDN,
             I_VPANDQ,
-            I_VPAND,
             I_VPAVGB,
             I_VPAVGW,
             I_VPBLENDD,
@@ -2131,8 +2121,8 @@ namespace jitasm
             I_VPHADDBD,
             I_VPHADDBQ,
             I_VPHADDBW,
-            I_VPHADDDQ,
             I_VPHADDD,
+            I_VPHADDDQ,
             I_VPHADDSW,
             I_VPHADDUBD,
             I_VPHADDUBQ,
@@ -2140,16 +2130,16 @@ namespace jitasm
             I_VPHADDUDQ,
             I_VPHADDUWD,
             I_VPHADDUWQ,
+            I_VPHADDW,
             I_VPHADDWD,
             I_VPHADDWQ,
-            I_VPHADDW,
             I_VPHMINPOSUW,
             I_VPHSUBBW,
-            I_VPHSUBDQ,
             I_VPHSUBD,
+            I_VPHSUBDQ,
             I_VPHSUBSW,
-            I_VPHSUBWD,
             I_VPHSUBW,
+            I_VPHSUBWD,
             I_VPINSRB,
             I_VPINSRD,
             I_VPINSRQ,
@@ -2223,9 +2213,9 @@ namespace jitasm
             I_VPMULLD,
             I_VPMULLW,
             I_VPMULUDQ,
+            I_VPOR,
             I_VPORD,
             I_VPORQ,
-            I_VPOR,
             I_VPPERM,
             I_VPROTB,
             I_VPROTD,
@@ -2251,8 +2241,8 @@ namespace jitasm
             I_VPSIGNB,
             I_VPSIGND,
             I_VPSIGNW,
-            I_VPSLLDQ,
             I_VPSLLD,
+            I_VPSLLDQ,
             I_VPSLLQ,
             I_VPSLLVD,
             I_VPSLLVQ,
@@ -2262,8 +2252,8 @@ namespace jitasm
             I_VPSRAVD,
             I_VPSRAVQ,
             I_VPSRAW,
-            I_VPSRLDQ,
             I_VPSRLD,
+            I_VPSRLDQ,
             I_VPSRLQ,
             I_VPSRLVD,
             I_VPSRLVQ,
@@ -2276,11 +2266,11 @@ namespace jitasm
             I_VPSUBUSB,
             I_VPSUBUSW,
             I_VPSUBW,
+            I_VPTEST,
             I_VPTESTMD,
             I_VPTESTMQ,
             I_VPTESTNMD,
             I_VPTESTNMQ,
-            I_VPTEST,
             I_VPUNPCKHBW,
             I_VPUNPCKHDQ,
             I_VPUNPCKHQDQ,
@@ -2289,9 +2279,9 @@ namespace jitasm
             I_VPUNPCKLDQ,
             I_VPUNPCKLQDQ,
             I_VPUNPCKLWD,
+            I_VPXOR,
             I_VPXORD,
             I_VPXORQ,
-            I_VPXOR,
             I_VRCP14PD,
             I_VRCP14PS,
             I_VRCP14SD,
@@ -2345,10 +2335,14 @@ namespace jitasm
             I_VSUBSS,
             I_VTESTPD,
             I_VTESTPS,
+            I_VUCOMISD,
+            I_VUCOMISS,
             I_VUNPCKHPD,
             I_VUNPCKHPS,
             I_VUNPCKLPD,
             I_VUNPCKLPS,
+            I_VXORPD,
+            I_VXORPS,
             I_VZEROALL,
             I_VZEROUPPER,
             I_WAIT,
@@ -2358,9 +2352,9 @@ namespace jitasm
             I_WRMSR,
             I_XABORT,
             I_XACQUIRE,
+            I_XADD,
             I_XBEGIN,
             I_XCHG,
-            I_FXCH,
             I_XCRYPTCBC,
             I_XCRYPTCFB,
             I_XCRYPTCTR,
@@ -2369,6 +2363,9 @@ namespace jitasm
             I_XEND,
             I_XGETBV,
             I_XLATB,
+            I_XOR,
+            I_XORPD,
+            I_XORPS,
             I_XRELEASE,
             I_XRSTOR,
             I_XRSTOR64,
@@ -2385,11 +2382,11 @@ namespace jitasm
             I_LAST_INSTRUCTION,
 
             // jitasm compiler instructions
-            I_COMPILER_DECLARE_REG_ARG,		///< Declare register argument
-            I_COMPILER_DECLARE_STACK_ARG,	///< Declare stack argument
-            I_COMPILER_DECLARE_RESULT_REG,	///< Declare result register (eax/rax/xmm0)
-            I_COMPILER_PROLOG,				///< Function prolog
-            I_COMPILER_EPILOG,				///< Function epilog
+            I_COMPILER_DECLARE_REG_ARG,     ///< Declare register argument
+            I_COMPILER_DECLARE_STACK_ARG,   ///< Declare stack argument
+            I_COMPILER_DECLARE_RESULT_REG,  ///< Declare result register (eax/rax/xmm0)
+            I_COMPILER_PROLOG,              ///< Function prolog
+            I_COMPILER_EPILOG,              ///< Function epilog
 
             I_ALIGN,
             I_NULL,
@@ -2421,12 +2418,12 @@ namespace jitasm
         enum EncodingFlags
         {
             E_SPECIAL = 1 << 0,
-            E_OPERAND_SIZE_PREFIX = 1 << 1,	///< Operand-size override prefix
-            E_REP_PREFIX = 1 << 2,	///< REP prefix
-            E_REXW_PREFIX = 1 << 3,	///< REX.W
-            E_MANDATORY_PREFIX_66 = 1 << 4,	///< Mandatory prefix 66
-            E_MANDATORY_PREFIX_F2 = 1 << 5,	///< Mandatory prefix F2
-            E_MANDATORY_PREFIX_F3 = 1 << 6,	///< Mandatory prefix F3
+            E_OPERAND_SIZE_PREFIX = 1 << 1, ///< Operand-size override prefix
+            E_REP_PREFIX = 1 << 2,  ///< REP prefix
+            E_REXW_PREFIX = 1 << 3, ///< REX.W
+            E_MANDATORY_PREFIX_66 = 1 << 4, ///< Mandatory prefix 66
+            E_MANDATORY_PREFIX_F2 = 1 << 5, ///< Mandatory prefix F2
+            E_MANDATORY_PREFIX_F3 = 1 << 6, ///< Mandatory prefix F3
             E_VEX = 1 << 7,
             E_XOP = 1 << 8,
             E_VEX_L = 1 << 9,
@@ -2496,10 +2493,10 @@ namespace jitasm
         {
             static size_t const MAX_OPERAND_COUNT = 6;
 
-            InstrID	    id_;
+            InstrID     id_;
             uint32      opcode_;
             uint32      encoding_flags_;
-            detail::Opd	opd_[MAX_OPERAND_COUNT];
+            detail::Opd opd_[MAX_OPERAND_COUNT];
             
             Instr(
                 InstrID             id,
@@ -2698,7 +2695,12 @@ namespace jitasm
 #ifdef JITASM_TEST
                 static void Test(std::vector< Instr > & list, bool is64)
                 {
-                    Opcode::Test(list, is64);
+                    std::vector< Instr > partial_list;
+                    Opcode::Test(partial_list, is64);
+                    for (auto & instr : partial_list)
+                    {
+                        list.push_back(instr);
+                    }
                 }
 #endif
             };
@@ -2715,18 +2717,33 @@ namespace jitasm
 
             // B
             template< Access access >
-            struct _By_
+            struct _Bd_
             {
                 static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
                     {
-                        switch (opd.GetSize())
+                        if (O_SIZE_32 == opd.GetSize())
                         {
-                        case O_SIZE_32:
                             return true;
-                        case O_SIZE_64:
+                        }
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Bq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        if  (O_SIZE_64 == opd.GetSize())
+                        {
                             return true;
                         }
                     }
@@ -2796,45 +2813,6 @@ namespace jitasm
                     return false;
                 }
             };
-            template< Access access >
-            struct _Ev_
-            {
-                static bool Matches(Instr & instr, size_t index)
-                {
-                    auto & opd = instr.GetOpd(index);
-                    if (opd.IsGpReg() || opd.IsMem())
-                    {
-                        switch (opd.GetSize())
-                        {
-                        case O_SIZE_16:
-                        case O_SIZE_32:
-                        case O_SIZE_64:
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            };
-            template< Access access >
-            struct _Ey_
-            {
-                static bool Matches(Instr & instr, size_t index)
-                {
-                    auto & opd = instr.GetOpd(index);
-                    if (opd.IsGpReg() || opd.IsMem())
-                    {
-                        switch (opd.GetSize())
-                        {
-                        case O_SIZE_32:
-                        case O_SIZE_64:
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            };
 
             // F
 
@@ -2895,45 +2873,6 @@ namespace jitasm
                     return false;
                 }
             };
-            template< Access access >
-            struct _Gv_
-            {
-                static bool Matches(Instr & instr, size_t index)
-                {
-                    auto & opd = instr.GetOpd(index);
-                    if (opd.IsGpReg())
-                    {
-                        switch (opd.GetSize())
-                        {
-                        case O_SIZE_16:
-                        case O_SIZE_32:
-                        case O_SIZE_64:
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            };
-            template< Access access >
-            struct _Gy_
-            {
-                static bool Matches(Instr & instr, size_t index)
-                {
-                    auto & opd = instr.GetOpd(index);
-                    if (opd.IsGpReg())
-                    {
-                        switch (opd.GetSize())
-                        {
-                        case O_SIZE_32:
-                        case O_SIZE_64:
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            };
 
             // H
 
@@ -2972,27 +2911,6 @@ namespace jitasm
                     if (opd.IsImm())
                     {
                         return detail::IsInt32(opd.GetImm());
-                    }
-
-                    return false;
-                }
-            };
-            struct _Iz_
-            {
-                static bool Matches(Instr & instr, size_t index)
-                {
-                    auto & opd0 = instr.GetOpd(0);
-                    auto & opd1 = instr.GetOpd(index);
-                    if (opd1.IsImm())
-                    {
-                        switch (opd0.GetSize())
-                        {
-                        case O_SIZE_16:
-                            return detail::IsInt16(opd1.GetImm());
-                        case O_SIZE_32:
-                        case O_SIZE_64:
-                            return detail::IsInt32(opd1.GetImm());
-                        }
                     }
 
                     return false;
@@ -3091,27 +3009,16 @@ namespace jitasm
                     return opd.IsMem() && O_SIZE_64 == opd.GetSize();
                 }
             };
+            
             template< Access access >
-            struct _Ma_
+            struct _Mo_
             {
                 static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
-                    if (opd.IsMem())
-                    {
-                        switch (opd.GetSize())
-                        {
-                        case O_SIZE_32:
-                            return true;
-                        case O_SIZE_64:
-                            return true;
-                        }
-                    }
-
-                    return false;
+                    return opd.IsMem() && O_SIZE_128 == opd.GetSize();
                 }
             };
-
             
             // N
 
@@ -3134,25 +3041,182 @@ namespace jitasm
             // W
 
             // X
+            template< Access access >
+            struct _Xb_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_8 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RSI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Xw_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_16 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RSI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Xd_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_32 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RSI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Xq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_64 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RSI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
 
             // Y
+            template< Access access >
+            struct _Yb_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_8 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RDI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Yw_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_16 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RDI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Yd_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_32 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RDI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Yq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsMem() && O_SIZE_64 == opd.GetSize() && opd.GetIndex().IsInvalid() && !opd.GetScale() && !opd.GetDisp())
+                    {
+                        auto reg = opd.GetBase();
+                        return R_TYPE_GP == reg.GetType() && RDI == reg.id;
+                    }
+
+                    return false;
+                }
+            };
 
             // Z
             template< Access access >
-            struct _Zv_
+            struct _Zw_
             {
                 static bool Matches(Instr & instr, size_t index)
                 {
                     auto & opd = instr.GetOpd(index);
                     if (opd.IsGpReg())
                     {
-                        switch (opd.GetSize())
+                        if (O_SIZE_16 == opd.GetSize())
                         {
-                        case O_SIZE_16:
                             return true;
-                        case O_SIZE_32:
+                        }
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Zd_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        if (O_SIZE_32 == opd.GetSize())
+                        {
                             return true;
-                        case O_SIZE_64:
+                        }
+                    }
+
+                    return false;
+                }
+            };
+
+            template< Access access >
+            struct _Zq_
+            {
+                static bool Matches(Instr & instr, size_t index)
+                {
+                    auto & opd = instr.GetOpd(index);
+                    if (opd.IsGpReg())
+                    {
+                        if (O_SIZE_64 == opd.GetSize())
+                        {
                             return true;
                         }
                     }
@@ -3264,6 +3328,21 @@ namespace jitasm
                 }
             };
 
+            template< size_t index, PhysicalRegID regid, Access access = RW > struct DummyRb
+            {
+            };
+
+            template< size_t index, PhysicalRegID regid, Access access = RW > struct DummyRw
+            {
+            };
+
+            template< size_t index, PhysicalRegID regid, Access access = RW > struct DummyRd
+            {
+            };
+
+            template< size_t index, PhysicalRegID regid, Access access = RW > struct DummyRq
+            {
+            };
 
             /////////////
 
@@ -3371,81 +3450,115 @@ namespace jitasm
             struct i64; // Invalid in 64-bit mode
             struct o64; // Only in 64-bit mode
 
-            template< size_t index, PhysicalRegID regid > struct DummyReg
-            {
-            };
-
             /////////////
 
-            template< Access a0 > using Eb = Match < _Eb_ < a0 >, None > ;
-            template< Access a0 > using Ew = Match < _Ew_ < a0 >, None >;
-            template< Access a0 > using Ed = Match < _Ed_ < a0 >, None >;
-            template< Access a0 > using Eq = Match < _Eq_ < a0 >, None >;
-            template< Access a0 > using Ev = Match < _Ev_ < a0 >, None >;
-
-            template< Access a0 > using Gb = Match < _Gb_ < a0 >, None > ;
-            template< Access a0 > using Gw = Match < _Gw_ < a0 >, None >;
-            template< Access a0 > using Gd = Match < _Gd_ < a0 >, None >;
-            template< Access a0 > using Gq = Match < _Gq_ < a0 >, None >;
-            template< Access a0 > using Gv = Match < _Gv_ < a0 >, None >;
-
-            /**/                  using Jb = Match < _Jb_, None >;
-            /**/                  using Jw = Match < _Jw_, None > ;
-            /**/                  using Jd = Match < _Jd_, None > ;
-
-            template< Access a0 > using Mb = Match < _Mb_ < a0 >, None >;
-            template< Access a0 > using Mw = Match < _Mw_ < a0 >, None >;
-            template< Access a0 > using Md = Match < _Md_ < a0 >, None >;
-            template< Access a0 > using Mq = Match < _Mq_ < a0 >, None >;
-
-            template< Access a0 > using Zv = Match < _Zv_ < a0 >, None >;
-
-
-            template< Access a0, Access a1 > using Eb_Gb = Match < _Eb_ < a0 >, _Gb_ < a1 >, None >;
-            template< Access a0, Access a1 > using Ew_Gw = Match < _Ew_ < a0 >, _Gw_ < a1 >, None >;
-            template< Access a0, Access a1 > using Ed_Gd = Match < _Ed_ < a0 >, _Gd_ < a1 >, None >;
-            template< Access a0, Access a1 > using Eq_Gq = Match < _Eq_ < a0 >, _Gq_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gb_Eb = Match < _Gb_ < a0 >, _Eb_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gw_Ew = Match < _Gw_ < a0 >, _Ew_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gd_Ed = Match < _Gd_ < a0 >, _Ed_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gq_Eq = Match < _Gq_ < a0 >, _Eq_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gw_Gw = Match < _Gw_ < a0 >, _Gw_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gd_Gd = Match < _Gd_ < a0 >, _Gd_ < a1 >, None >;
-            template< Access a0, Access a1 > using Gq_Gq = Match < _Gq_ < a0 >, _Gq_ < a1 >, None >;
+            template< Access a0, Access a1                       > struct Bd_Ed        : Match < _Bd_ < a0 >, _Ed_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Bq_Eq        : Match < _Bq_ < a0 >, _Eq_ < a1 >,                                       None > {};
             
-            template< Access a0, Access a1 > using Gw_Md = Match < _Gw_ < a0 >, _Md_ < a1 >, None > ;
-            template< Access a0, Access a1 > using Gd_Mq = Match < _Gd_ < a0 >, _Mq_ < a1 >, None > ;
+            template< Access a0, Access a1, Access a2, Access a3 > struct Bd_Gd_Gd_Ed  : Match < _Bd_ < a0 >, _Gd_ < a1 >, _Gd_ < a2 >, _Ed_ < a3 >,             None > {};
+            template< Access a0, Access a1, Access a2, Access a3 > struct Bq_Gq_Gq_Eq  : Match < _Bq_ < a0 >, _Gq_ < a1 >, _Gq_ < a2 >, _Eq_ < a3 >,             None > {};
 
-            template< Access a0, Access a1 > using Gy_Ey_Ib = Match < _Gy_ < a0 >, _Ey_ < a1 >, _Ib_, None >;
+            template< Access a0                                  > struct Eb           : Match < _Eb_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1                       > struct Eb_Gb        : Match < _Eb_ < a0 >, _Gb_ < a1 >,                                       None > {};
+            template< Access a0                                  > struct Eb_Ib        : Match < _Eb_ < a0 >, _Ib_,                                              None > {};
 
-            template< Access a0 > using Eb_Ib = Match < _Eb_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Ew_Ib = Match < _Ew_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Ed_Ib = Match < _Ed_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Eq_Ib = Match < _Eq_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Ew_Iw = Match < _Ew_ < a0 >, _Iw_, None >;
-            template< Access a0 > using Ed_Id = Match < _Ed_ < a0 >, _Id_, None >;
-            template< Access a0 > using Eq_Id = Match < _Eq_ < a0 >, _Id_, None >;
-            template< Access a0 > using Gb_Ib = Match < _Gb_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Gw_Ib = Match < _Gw_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Gd_Ib = Match < _Gd_ < a0 >, _Ib_, None >;
-            template< Access a0 > using Gq_Ib = Match < _Gq_ < a0 >, _Ib_, None >;
+            template< Access a0                                  > struct Ew           : Match < _Ew_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1                       > struct Ew_Gw        : Match < _Ew_ < a0 >, _Gw_ < a1 >,                                       None > {};
+            template< Access a0                                  > struct Ew_Ib        : Match < _Ew_ < a0 >, _Ib_,                                              None > {};
+            template< Access a0                                  > struct Ew_Iw        : Match < _Ew_ < a0 >, _Iw_,                                              None > {};
 
-            template< Access a0, Access a1, Access a2 > using Eb_AL_Gb = Match < _Eb_ < a0 >, _rb_ < RAX, a1 >, _Gb_ < a2 >, None >;
-            template< Access a0, Access a1, Access a2 > using Ev_rAX_Gv = Match < _Ev_ < a0 >, _rv_ < RAX, a1 >, _Gv_ < a2 >, None >;
+            template< Access a0                                  > struct Ed           : Match < _Ed_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1                       > struct Ed_Gd        : Match < _Ed_ < a0 >, _Gd_ < a1 >,                                       None > {};
+            template< Access a0                                  > struct Ed_Ib        : Match < _Ed_ < a0 >, _Ib_,                                              None > {};
+            template< Access a0                                  > struct Ed_Id        : Match < _Ed_ < a0 >, _Id_,                                              None > {};
 
-            template< Access a0 > using AL_Ib = Match < _rb_ < AL, a0 >, _Ib_, None >;
-            template< Access a0 > using AX_Iw = Match < _rw_ < AX, a0 >, _Iw_, None >;
-            template< Access a0 > using EAX_Id = Match < _rd_ < EAX, a0 >, _Id_, None >;
-            template< Access a0 > using RAX_Id = Match < _rq_ < RAX, a0 >, _Id_, None >;
+            template< Access a0                                  > struct Eq           : Match < _Eq_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1                       > struct Eq_Gq        : Match < _Eq_ < a0 >, _Gq_ < a1 >,                                       None > {};
+            template< Access a0                                  > struct Eq_Ib        : Match < _Eq_ < a0 >, _Ib_,                                              None > {};
+            template< Access a0                                  > struct Eq_Id        : Match < _Eq_ < a0 >, _Id_,                                              None > {};
 
-            template< Access a0, Access a1, Access a2, Access a3 > using By_Gy_rDX_Ey = Match < _By_ < a0 >, _Gy_ < a1 >, _ry_ < RDX, a2 >, _Ey_ < a3 >, None >;
-            template< Access a0, Access a1, Access a2            > using Gy_By_Ey = Match < _Gy_ < a0 >, _By_ < a1 >, _Ey_ < a2 >, None >;
-            template< Access a0, Access a1, Access a2            > using Gy_Ey_By = Match < _Gy_ < a0 >, _Ey_ < a1 >, _By_ < a2 >, None >;
-            template< Access a0, Access a1                       > using By_Ey = Match < _By_ < a0 >, _Ey_ < a1 >, None >;
+            template< Access a0                                  > struct Gb           : Match < _Gb_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1                       > struct Gb_Eb        : Match < _Gb_ < a0 >, _Eb_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gb_Gw        : Match < _Gb_ < a0 >, _Gw_ < a1 >,                                       None > {};
+            template< Access a0                                  > struct Gb_Ib        : Match < _Gb_ < a0 >, _Ib_,                                              None > {};
+
+            template< Access a0                                  > struct Gw           : Match < _Gw_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1                       > struct Gw_Eb        : Match < _Gw_ < a0 >, _Eb_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gw_Ew        : Match < _Gw_ < a0 >, _Ew_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gw_Ew_Ib     : Match < _Gw_ < a0 >, _Ew_ < a1 >, _Ib_,                                 None > {};
+            template< Access a0, Access a1                       > struct Gw_Ew_Iw     : Match < _Gw_ < a0 >, _Ew_ < a1 >, _Iw_,                                 None > {};
+            template< Access a0, Access a1                       > struct Gw_Gb        : Match < _Gw_ < a0 >, _Gb_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gw_Gw        : Match < _Gw_ < a0 >, _Gw_ < a1 >,                                       None > {};
+            template< Access a0, Access a1, Access a2            > struct Gw_Gw_Ew     : Match < _Gw_ < a0 >, _Gw_ < a1 >, _Ew_< a2 >,                           None > {};
+            template< Access a0, Access a1                       > struct Gw_Gd        : Match < _Gw_ < a0 >, _Gd_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gw_Md        : Match < _Gw_ < a0 >, _Md_ < a1 >,                                       None > {};
+            template< Access a0                                  > struct Gw_Ib        : Match < _Gw_ < a0 >, _Ib_,                                              None > {};
+            template< Access a0                                  > struct Gw_Iw_Ib     : Match < _Gw_ < a0 >, _Iw_, _Ib_,                                        None > {};
+            template< Access a0, Access a1                       > struct Gw_Xb        : Match < _Gw_ < a0 >, _Xb_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gw_Xw        : Match < _Gw_ < a0 >, _Xw_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gw_Xd        : Match < _Gw_ < a0 >, _Xd_ < a1 >,                                       None > {};
+
+            template< Access a0                                  > struct Gd           : Match < _Gd_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1, Access a2            > struct Gd_Bd_Ed     : Match < _Gd_ < a0 >, _Bd_ < a1 >, _Ed_ < a2 >,                          None > {};
+            template< Access a0, Access a1, Access a2            > struct Gd_Ed_Bd     : Match < _Gd_ < a0 >, _Ed_ < a1 >, _Bd_ < a2 >,                          None > {};
+            template< Access a0, Access a1                       > struct Gd_Ed        : Match < _Gd_ < a0 >, _Ed_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gd_Ed_Ib     : Match < _Gd_ < a0 >, _Ed_ < a1 >, _Ib_,                                 None > {};
+            template< Access a0, Access a1                       > struct Gd_Ed_Id     : Match < _Gd_ < a0 >, _Ed_ < a1 >, _Id_,                                 None > {};
+            template< Access a0, Access a1                       > struct Gd_Gw        : Match < _Gd_ < a0 >, _Gw_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gd_Gd        : Match < _Gd_ < a0 >, _Gd_ < a1 >,                                       None > {};
+            template< Access a0, Access a1, Access a2            > struct Gd_Gd_Ed     : Match < _Gd_ < a0 >, _Gd_ < a1 >, _Ed_< a2 >,                           None > {};
+            template< Access a0, Access a1                       > struct Gd_Mq        : Match < _Gd_ < a0 >, _Mq_ < a1 >,                                       None > {};
+            template< Access a0                                  > struct Gd_Ib        : Match < _Gd_ < a0 >, _Ib_,                                              None > {};
+            template< Access a0                                  > struct Gd_Iw_Ib     : Match < _Gd_ < a0 >, _Iw_, _Ib_,                                        None > {};
+            template< Access a0, Access a1, Access a2            > struct Gdd_Mq_Gdd   : Match < _Gd_ < a0 >, _Gd_ < a0 >, _Mq_< a1 >, _Gd_ < a2 >, _Gd_ < a2 >, None > {};
+
+            template< Access a0                                  > struct Gq           : Match < _Gq_ < a0 >,                                                    None > {};
+            template< Access a0, Access a1, Access a2            > struct Gq_Bq_Eq     : Match < _Gq_ < a0 >, _Bq_ < a1 >, _Eq_ < a2 >,                          None > {};
+            template< Access a0, Access a1, Access a2            > struct Gq_Eq_Bq     : Match < _Gq_ < a0 >, _Eq_ < a1 >, _Bq_ < a2 >,                          None > {};
+            template< Access a0, Access a1                       > struct Gq_Eq        : Match < _Gq_ < a0 >, _Eq_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Gq_Eq_Ib     : Match < _Gq_ < a0 >, _Eq_ < a1 >, _Ib_,                                 None > {};
+            template< Access a0, Access a1                       > struct Gq_Eq_Id     : Match < _Gq_ < a0 >, _Eq_ < a1 >, _Id_,                                 None > {};
+            template< Access a0, Access a1                       > struct Gq_Gq        : Match < _Gq_ < a0 >, _Gq_ < a1 >,                                       None > {};
+            template< Access a0, Access a1, Access a2            > struct Gq_Gq_Eq     : Match < _Gq_ < a0 >, _Gq_ < a1 >, _Eq_< a2 >,                           None > {};
+            template< Access a0                                  > struct Gq_Ib        : Match < _Gq_ < a0 >, _Ib_,                                              None > {};
+            template< Access a0                                  > struct Gq_Iw_Ib     : Match < _Gq_ < a0 >, _Iw_, _Ib_,                                        None > {};
+            template< Access a0, Access a1, Access a2            > struct Gqq_Mo_Gqq   : Match < _Gq_ < a0 >, _Gq_ < a0 >, _Mo_< a1 >, _Gq_ < a2 >, _Gq_ < a2 >, None > {};
+
+            /**/                                                   struct Ib           : Match < _Ib_,                                                           None > {};
+            template< Access a0                                  > struct Ib_Gb        : Match < _Ib_, _Gb_ < a0 >,                                              None > {};
+            template< Access a0                                  > struct Ib_Gw        : Match < _Ib_, _Gw_ < a0 >,                                              None > {};
+            template< Access a0                                  > struct Ib_Gd        : Match < _Ib_, _Gd_ < a0 >,                                              None > {};
+
+            /**/                                                   struct Jb           : Match < _Jb_,                                                           None > {};
+            /**/                                                   struct Jw           : Match < _Jw_,                                                           None > {};
+            /**/                                                   struct Jd           : Match < _Jd_,                                                           None > {};
+
+            template< Access a0                                  > struct Mb           : Match < _Mb_ < a0 >,                                                    None > {};
+            template< Access a0                                  > struct Mw           : Match < _Mw_ < a0 >,                                                    None > {};
+            template< Access a0                                  > struct Md           : Match < _Md_ < a0 >,                                                    None > {};
+            template< Access a0                                  > struct Mq           : Match < _Mq_ < a0 >,                                                    None > {};
+
+            template< Access a0, Access a1                       > struct Xb_Yb        : Match < _Xb_ < a0 >, _Yb_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Xw_Yw        : Match < _Xw_ < a0 >, _Yw_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Xd_Yd        : Match < _Xd_ < a0 >, _Yd_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Xq_Yq        : Match < _Xq_ < a0 >, _Yq_ < a1 >,                                       None > {};
+
+            template< Access a0, Access a1                       > struct Yb_Gw        : Match < _Yb_ < a0 >, _Gw_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Yw_Gw        : Match < _Yw_ < a0 >, _Gw_ < a1 >,                                       None > {};
+            template< Access a0, Access a1                       > struct Yd_Gw        : Match < _Yd_ < a0 >, _Gw_ < a1 >,                                       None > {};
+
+            template< Access a0                                  > struct Zw           : Match < _Zw_ < a0 >,                                                    None > {};
+            template< Access a0                                  > struct Zd           : Match < _Zd_ < a0 >,                                                    None > {};
+            template< Access a0                                  > struct Zq           : Match < _Zq_ < a0 >,                                                    None > {};
+
+            template< Access a0                                  > struct AL_Ib        : Match < _rb_ < AL, a0 >, _Ib_,                                          None > {};
+            template< Access a0                                  > struct AX_Iw        : Match < _rw_ < AX, a0 >, _Iw_,                                          None > {};
+            template< Access a0                                  > struct EAX_Id       : Match < _rd_ < EAX, a0 >, _Id_,                                         None > {};
+            template< Access a0                                  > struct RAX_Id       : Match < _rq_ < RAX, a0 >, _Id_,                                         None > {};
 
             /////////////
 
-            template< Access a  > detail::Opd AlterAccess(detail::Opd const & opd)
+            template< Access a > detail::Opd AlterAccess(detail::Opd const & opd)
             {
                 return a == R ? detail::R(opd) : a == W ? detail::W(opd) : detail::RW(opd);
             }
