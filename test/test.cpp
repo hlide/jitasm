@@ -1,3 +1,4 @@
+#if 1
 #include <windows.h>
 
 #include "jitasm.Frontend.x86_32.h"
@@ -329,9 +330,107 @@ int main(int argc, char * argv[])
 {
     test_x86_32();
 
-    test_x86_64();
+    //test_x86_64();
 
     system("pause");
 
     return 0;
 }
+#else
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+typedef size_t Instr; // dummy one for simplified code
+
+enum
+{
+    I_INVALID = 0,
+
+    I_LAST_INSTRUCTION = 1223
+};
+
+template< size_t id >
+static void Test_T(std::vector< Instr > &, bool)
+{
+    cout << "testing instruction #" << id << endl;
+}
+
+struct Tester;
+
+template< size_t start_id, size_t end_id >
+struct TestArrayInitializer_T
+{
+    static void Set(Tester & tester)
+    {
+        tester.array[start_id] = Test_T < start_id > ;
+        TestArrayInitializer_T< start_id + 1, end_id >::Set(tester);
+    }
+};
+
+template< size_t start_id >
+struct TestArrayInitializer_T < start_id, start_id >
+{
+    static void Set(Tester & tester)
+    {
+        tester.array[start_id] = Test_T < start_id > ;
+    }
+};
+
+template< typename Derived,
+          size_t   start_id,
+          size_t   end_id,
+          size_t   bits,
+          size_t   N = (1 << bits),
+          size_t   i = (end_id - start_id) & (N - 1) >
+struct Tester_T : Tester_T < Derived, start_id, end_id - N + i, bits >
+{
+    Tester_T()
+    {
+        TestArrayInitializer_T< end_id - N + i, end_id - 1 >::Set(*static_cast<Derived *>(this));
+    }
+};
+
+template< typename Derived, size_t bits, size_t N, size_t i >
+struct Tester_T < Derived, 0, 0, bits, N, i >
+{
+};
+
+struct Tester : Tester_T < Tester, I_INVALID, I_LAST_INSTRUCTION, 8 >
+{
+    void(*array[size_t(I_LAST_INSTRUCTION)])(std::vector< Instr > & list, bool is64);
+
+    void operator()(size_t id, std::vector< Instr > & list, bool is64) const
+    {
+        if (id < I_LAST_INSTRUCTION)
+        {
+            (array[size_t(id)])(list, is64);
+        }
+        else
+        {
+            // to do nothing
+        }
+    }
+};
+
+static Tester const tester;
+
+int main()
+{
+    std::vector< Instr > list;
+
+    tester(0, list, true); // display testing instruction #0
+    tester(1, list, true); // display testing instruction #1
+    tester(2, list, true); // display testing instruction #2
+    tester(3, list, true); // display testing instruction #3
+    tester(4, list, true); // display testing instruction #4
+    tester(8, list, true); // display testing instruction #8
+    tester(15, list, true); // display testing instruction #15
+    tester(16, list, true); // display testing instruction #16
+    tester(1024, list, true); // display testing instruction #1024
+    tester(1222, list, true); // display testing instruction #1222
+    tester(1223, list, true); // invalid instruction number - do nothing
+    tester(2048, list, true); // invalid instruction number - do nothing
+}
+#endif

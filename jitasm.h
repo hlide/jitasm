@@ -2,6 +2,7 @@
 #ifndef jitasm_h__
 #define jitasm_h__
 
+#define JITASM_TEST
 
 #if defined(_WIN32)
 #define JITASM_WIN		// Windows
@@ -87,7 +88,8 @@
 #define JITASM_ASSERT ASSERT
 #else
 #include <assert.h>
-#define JITASM_ASSERT assert
+//#define JITASM_ASSERT assert
+#define JITASM_ASSERT(x) x
 #endif
 
 //#define JITASM_DEBUG_DUMP

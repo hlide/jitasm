@@ -144,7 +144,7 @@ namespace jitasm
 
             static bool IsJump(InstrID id)
             {
-                return id == I_JMP || id == I_JCC || id == I_LOOPCC;
+                return id == I_JMP || id == I_JCC;
             }
 
             static bool HasRIP(detail::Opd const & opd)
@@ -516,22 +516,22 @@ namespace jitasm
 
             void cmc() { AppendInstr(I_CMC); }
 
-            void cmovcc(ConditionCode cc, Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, cc, a1, a2); }
-            void cmovcc(ConditionCode cc, Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, cc, a1, a2); }
-            void cmovcc(ConditionCode cc, Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, cc, a1, a2); }
-            void cmovcc(ConditionCode cc, Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, cc, a1, a2); }
-            void cmovo(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_O, a1, a2); }
-            void cmovo(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_O, a1, a2); }
-            void cmovo(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_O, a1, a2); }
-            void cmovo(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_O, a1, a2); }
-            void cmovno(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NO, a1, a2); }
-            void cmovno(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NO, a1, a2); }
-            void cmovno(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NO, a1, a2); }
-            void cmovno(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NO, a1, a2); }
-            void cmovb(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_B, a1, a2); }
-            void cmovb(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_B, a1, a2); }
-            void cmovb(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_B, a1, a2); }
-            void cmovb(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_B, a1, a2); }
+            void cmovcc(ConditionCode cc, Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, cc, a1, a2); }
+            void cmovcc(ConditionCode cc, Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, cc, a1, a2); }
+            void cmovcc(ConditionCode cc, Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, cc, a1, a2); }
+            void cmovcc(ConditionCode cc, Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, cc, a1, a2); }
+            void cmovo(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_O, a1, a2); }
+            void cmovo(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_O, a1, a2); }
+            void cmovo(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_O, a1, a2); }
+            void cmovo(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_O, a1, a2); }
+            void cmovno(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NO, a1, a2); }
+            void cmovno(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NO, a1, a2); }
+            void cmovno(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NO, a1, a2); }
+            void cmovno(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NO, a1, a2); }
+            void cmovb(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_B, a1, a2); }
+            void cmovb(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_B, a1, a2); }
+            void cmovb(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_B, a1, a2); }
+            void cmovb(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_B, a1, a2); }
             void cmovc(Reg16 const & a1, Reg16 const & a2) { cmovb(a1, a2); }
             void cmovc(Reg16 const & a1, Mem16 const & a2) { cmovb(a1, a2); }
             void cmovc(Reg32 const & a1, Reg32 const & a2) { cmovb(a1, a2); }
@@ -540,10 +540,10 @@ namespace jitasm
             void cmovnae(Reg16 const & a1, Mem16 const & a2) { cmovb(a1, a2); }
             void cmovnae(Reg32 const & a1, Reg32 const & a2) { cmovb(a1, a2); }
             void cmovnae(Reg32 const & a1, Mem32 const & a2) { cmovb(a1, a2); }
-            void cmovae(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_AE, a1, a2); }
-            void cmovae(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_AE, a1, a2); }
-            void cmovae(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_AE, a1, a2); }
-            void cmovae(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_AE, a1, a2); }
+            void cmovae(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_AE, a1, a2); }
+            void cmovae(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_AE, a1, a2); }
+            void cmovae(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_AE, a1, a2); }
+            void cmovae(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_AE, a1, a2); }
             void cmovnb(Reg16 const & a1, Reg16 const & a2) { cmovae(a1, a2); }
             void cmovnb(Reg16 const & a1, Mem16 const & a2) { cmovae(a1, a2); }
             void cmovnb(Reg32 const & a1, Reg32 const & a2) { cmovae(a1, a2); }
@@ -552,82 +552,82 @@ namespace jitasm
             void cmovnc(Reg16 const & a1, Mem16 const & a2) { cmovae(a1, a2); }
             void cmovnc(Reg32 const & a1, Reg32 const & a2) { cmovae(a1, a2); }
             void cmovnc(Reg32 const & a1, Mem32 const & a2) { cmovae(a1, a2); }
-            void cmove(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_E, a1, a2); }
-            void cmove(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_E, a1, a2); }
-            void cmove(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_E, a1, a2); }
-            void cmove(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_E, a1, a2); }
+            void cmove(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_E, a1, a2); }
+            void cmove(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_E, a1, a2); }
+            void cmove(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_E, a1, a2); }
+            void cmove(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_E, a1, a2); }
             void cmovz(Reg16 const & a1, Reg16 const & a2) { cmove(a1, a2); }
             void cmovz(Reg16 const & a1, Mem16 const & a2) { cmove(a1, a2); }
             void cmovz(Reg32 const & a1, Reg32 const & a2) { cmove(a1, a2); }
             void cmovz(Reg32 const & a1, Mem32 const & a2) { cmove(a1, a2); }
-            void cmovne(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NE, a1, a2); }
-            void cmovne(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NE, a1, a2); }
-            void cmovne(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NE, a1, a2); }
-            void cmovne(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NE, a1, a2); }
+            void cmovne(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NE, a1, a2); }
+            void cmovne(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NE, a1, a2); }
+            void cmovne(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NE, a1, a2); }
+            void cmovne(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NE, a1, a2); }
             void cmovnz(Reg16 const & a1, Reg16 const & a2) { cmovne(a1, a2); }
             void cmovnz(Reg16 const & a1, Mem16 const & a2) { cmovne(a1, a2); }
             void cmovnz(Reg32 const & a1, Reg32 const & a2) { cmovne(a1, a2); }
             void cmovnz(Reg32 const & a1, Mem32 const & a2) { cmovne(a1, a2); }
-            void cmovbe(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_BE, a1, a2); }
-            void cmovbe(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_BE, a1, a2); }
-            void cmovbe(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_BE, a1, a2); }
-            void cmovbe(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_BE, a1, a2); }
+            void cmovbe(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_BE, a1, a2); }
+            void cmovbe(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_BE, a1, a2); }
+            void cmovbe(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_BE, a1, a2); }
+            void cmovbe(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_BE, a1, a2); }
             void cmovna(Reg16 const & a1, Reg16 const & a2) { cmovbe(a1, a2); }
             void cmovna(Reg16 const & a1, Mem16 const & a2) { cmovbe(a1, a2); }
             void cmovna(Reg32 const & a1, Reg32 const & a2) { cmovbe(a1, a2); }
             void cmovna(Reg32 const & a1, Mem32 const & a2) { cmovbe(a1, a2); }
-            void cmova(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_A, a1, a2); }
-            void cmova(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_A, a1, a2); }
-            void cmova(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_A, a1, a2); }
-            void cmova(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_A, a1, a2); }
+            void cmova(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_A, a1, a2); }
+            void cmova(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_A, a1, a2); }
+            void cmova(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_A, a1, a2); }
+            void cmova(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_A, a1, a2); }
             void cmovnbe(Reg16 const & a1, Reg16 const & a2) { cmova(a1, a2); }
             void cmovnbe(Reg16 const & a1, Mem16 const & a2) { cmova(a1, a2); }
             void cmovnbe(Reg32 const & a1, Reg32 const & a2) { cmova(a1, a2); }
             void cmovnbe(Reg32 const & a1, Mem32 const & a2) { cmova(a1, a2); }
-            void cmovs(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_S, a1, a2); }
-            void cmovs(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_S, a1, a2); }
-            void cmovs(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_S, a1, a2); }
-            void cmovs(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_S, a1, a2); }
-            void cmovns(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NS, a1, a2); }
-            void cmovns(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NS, a1, a2); }
-            void cmovns(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NS, a1, a2); }
-            void cmovns(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NS, a1, a2); }
-            void cmovp(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_P, a1, a2); }
-            void cmovp(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_P, a1, a2); }
-            void cmovp(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_P, a1, a2); }
-            void cmovp(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_P, a1, a2); }
+            void cmovs(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_S, a1, a2); }
+            void cmovs(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_S, a1, a2); }
+            void cmovs(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_S, a1, a2); }
+            void cmovs(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_S, a1, a2); }
+            void cmovns(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NS, a1, a2); }
+            void cmovns(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NS, a1, a2); }
+            void cmovns(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NS, a1, a2); }
+            void cmovns(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NS, a1, a2); }
+            void cmovp(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_P, a1, a2); }
+            void cmovp(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_P, a1, a2); }
+            void cmovp(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_P, a1, a2); }
+            void cmovp(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_P, a1, a2); }
             void cmovnpe(Reg16 const & a1, Reg16 const & a2) { cmovp(a1, a2); }
             void cmovnpe(Reg16 const & a1, Mem16 const & a2) { cmovp(a1, a2); }
             void cmovnpe(Reg32 const & a1, Reg32 const & a2) { cmovp(a1, a2); }
             void cmovnpe(Reg32 const & a1, Mem32 const & a2) { cmovp(a1, a2); }
-            void cmovnp(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NP, a1, a2); }
-            void cmovnp(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_NP, a1, a2); }
-            void cmovnp(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NP, a1, a2); }
-            void cmovnp(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_NP, a1, a2); }
+            void cmovnp(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NP, a1, a2); }
+            void cmovnp(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_NP, a1, a2); }
+            void cmovnp(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NP, a1, a2); }
+            void cmovnp(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_NP, a1, a2); }
             void cmovnpo(Reg16 const & a1, Reg16 const & a2) { cmovnp(a1, a2); }
             void cmovnpo(Reg16 const & a1, Mem16 const & a2) { cmovnp(a1, a2); }
             void cmovnpo(Reg32 const & a1, Reg32 const & a2) { cmovnp(a1, a2); }
             void cmovnpo(Reg32 const & a1, Mem32 const & a2) { cmovnp(a1, a2); }
-            void cmovge(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_GE, a1, a2); }
-            void cmovge(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_GE, a1, a2); }
-            void cmovge(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_GE, a1, a2); }
-            void cmovge(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_GE, a1, a2); }
+            void cmovge(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_GE, a1, a2); }
+            void cmovge(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_GE, a1, a2); }
+            void cmovge(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_GE, a1, a2); }
+            void cmovge(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_GE, a1, a2); }
             void cmovnl(Reg16 const & a1, Reg16 const & a2) { cmovge(a1, a2); }
             void cmovnl(Reg16 const & a1, Mem16 const & a2) { cmovge(a1, a2); }
             void cmovnl(Reg32 const & a1, Reg32 const & a2) { cmovge(a1, a2); }
             void cmovnl(Reg32 const & a1, Mem32 const & a2) { cmovge(a1, a2); }
-            void cmovle(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_LE, a1, a2); }
-            void cmovle(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_LE, a1, a2); }
-            void cmovle(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_LE, a1, a2); }
-            void cmovle(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_LE, a1, a2); }
+            void cmovle(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_LE, a1, a2); }
+            void cmovle(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_LE, a1, a2); }
+            void cmovle(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_LE, a1, a2); }
+            void cmovle(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_LE, a1, a2); }
             void cmovng(Reg16 const & a1, Reg16 const & a2) { cmovle(a1, a2); }
             void cmovng(Reg16 const & a1, Mem16 const & a2) { cmovle(a1, a2); }
             void cmovng(Reg32 const & a1, Reg32 const & a2) { cmovle(a1, a2); }
             void cmovng(Reg32 const & a1, Mem32 const & a2) { cmovle(a1, a2); }
-            void cmovg(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVcc, CC_G, a1, a2); }
-            void cmovg(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVcc, CC_G, a1, a2); }
-            void cmovg(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVcc, CC_G, a1, a2); }
-            void cmovg(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVcc, CC_G, a1, a2); }
+            void cmovg(Reg16 const & a1, Reg16 const & a2) { AppendCondInstr(I_CMOVCC, CC_G, a1, a2); }
+            void cmovg(Reg16 const & a1, Mem16 const & a2) { AppendCondInstr(I_CMOVCC, CC_G, a1, a2); }
+            void cmovg(Reg32 const & a1, Reg32 const & a2) { AppendCondInstr(I_CMOVCC, CC_G, a1, a2); }
+            void cmovg(Reg32 const & a1, Mem32 const & a2) { AppendCondInstr(I_CMOVCC, CC_G, a1, a2); }
             void cmovnle(Reg16 const & a1, Reg16 const & a2) { cmovg(a1, a2); }
             void cmovnle(Reg16 const & a1, Mem16 const & a2) { cmovg(a1, a2); }
             void cmovnle(Reg32 const & a1, Reg32 const & a2) { cmovg(a1, a2); }

@@ -180,7 +180,7 @@ namespace jitasm
 
                 /// NONE
                 Opd()
-                    : opdtype_(O_TYPE_NONE)
+                    : opdtype_(O_TYPE_NONE), opdsize_(0)
                 {
                 }
                 /// REG
@@ -1218,7 +1218,7 @@ namespace jitasm
             I_CLI,
             I_CLTS,
             I_CMC,
-            I_CMOVcc,
+            I_CMOVCC,
             I_CMP,
             I_CMPPD,
             I_CMPPS,
@@ -1281,7 +1281,7 @@ namespace jitasm
             I_FBLD,
             I_FBSTP,
             I_FCHS,
-            I_FCMOVcc,
+            I_FCMOVCC,
             I_FCOM,
             I_FCOMI,
             I_FCOMP,
@@ -1439,7 +1439,6 @@ namespace jitasm
             I_LMSW,
             I_LOCK,
             I_LODS,
-            I_LOOPCC,
             I_LSL,
             I_LSS,
             I_LTR,
@@ -1622,8 +1621,8 @@ namespace jitasm
             I_PMULLW,
             I_PMULUDQ,
             I_POP,
-            I_POPAL,
-            I_POPAW,
+            I_POPA,
+            I_POPAD,
             I_POPCNT,
             I_POPF,
             I_POPFD,
@@ -1673,8 +1672,8 @@ namespace jitasm
             I_PUNPCKLQDQ,
             I_PUNPCKLWD,
             I_PUSH,
-            I_PUSHAL,
-            I_PUSHAW,
+            I_PUSHA,
+            I_PUSHAD,
             I_PUSHF,
             I_PUSHFD,
             I_PUSHFQ,
@@ -1713,7 +1712,7 @@ namespace jitasm
             I_SARX,
             I_SBB,
             I_SCAS,
-            I_SETcc,
+            I_SETCC,
             I_SFENCE,
             I_SGDT,
             I_SHA1MSG1,
@@ -2362,7 +2361,7 @@ namespace jitasm
             I_XCRYPTOFB,
             I_XEND,
             I_XGETBV,
-            I_XLATB,
+            I_XLAT,
             I_XOR,
             I_XORPD,
             I_XORPS,
@@ -2402,17 +2401,12 @@ namespace jitasm
         enum JumpCondition
         {
             JCC_O, JCC_NO, JCC_B, JCC_AE, JCC_E, JCC_NE, JCC_BE, JCC_A, JCC_S, JCC_NS, JCC_P, JCC_NP, JCC_L, JCC_GE, JCC_LE, JCC_G,
-            JCC_CXZ, JCC_ECXZ, JCC_RCXZ,
+            JCC_LOOPE = 0x70, JCC_LOOPNE, JCC_RCXNZ, JCC_RCXZ
         };
 
         enum ConditionCode
         {
             CC_O, CC_NO, CC_B, CC_AE, CC_E, CC_NE, CC_BE, CC_A, CC_S, CC_NS, CC_P, CC_NP, CC_L, CC_GE, CC_LE, CC_G,
-        };
-
-        enum LoopCondition
-        {
-            LOOP_NE, LOOP_E, LOOP_NC,
         };
 
         enum EncodingFlags
@@ -2539,7 +2533,7 @@ namespace jitasm
                 return opd_[index];
             }
 
-            friend bool operator== (Instr const & lhs, Instr const & lhr)
+            friend __declspec(noinline) bool operator== (Instr const & lhs, Instr const & lhr)
             {
                 return
                     lhs.id_ == lhr.id_ &&
@@ -2665,16 +2659,16 @@ namespace jitasm
                     while (i != list.end())
                     {
                         auto & instr = *i;
-                        bool unique = true;
+                        bool already_found = false;
                         for (auto & unique_instr : unique_list)
                         {
-                            if (unique_instr == instr)
+                            already_found = unique_instr == instr;
+                            if (already_found)
                             {
-                                unique = false;
                                 break;
                             }
                         }
-                        if (unique)
+                        if (!already_found)
                         {
                             unique_list.push_back(instr);
                         }
